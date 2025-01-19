@@ -22,9 +22,9 @@ final class CarFactory extends PersistentProxyObjectFactory
     {
         $defaults = [
             'brand' => self::faker()->randomElement(Car::AVAILABLE_BRANDS),
-            'currentLat' => self::faker()->latitude(),
-            'currentLng' => self::faker()->longitude(),
             'registrationNumber' => self::faker()->carRegistrationNumber(),
+            'latitude' => self::faker()->latitude(),
+            'longitude' => self::faker()->longitude(),
             'rented' => self::faker()->randomElement([true, false]),
             'vin' => self::faker()->vin(),
         ];
