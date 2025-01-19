@@ -6,13 +6,21 @@ use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use App\Entity\Car;
 use App\Factory\CarFactory;
 use App\Repository\CarRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpClient\Exception\ClientException;
+use Symfony\Component\HttpClient\Exception\TransportException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Zenstruck\Foundry\Persistence\Proxy;
+use Zenstruck\Foundry\Test\Factories;
+use Zenstruck\Foundry\Test\ResetDatabase;
 
 class CarTest extends ApiTestCase
 {
+    use Factories;
+    use ResetDatabase;
+
     /**
      * @dataProvider countOfCarsInCollectionProvider
      */
@@ -117,6 +125,55 @@ class CarTest extends ApiTestCase
         $this->assertSame($expectedMessage, $deserializedResponse['violations'][0]['message']);
 
         CarFactory::truncate();
+    }
+
+    public function testShouldRemoveTheCar(): void
+    {
+        // given
+        $car = new Car;
+        $car->setBrand('BMW');
+        $car->setRegistrationNumber('GS123456');
+        $car->setVin('VF1KZ1A054Y123456');
+        $car->setRented(false);
+
+        ($entityManager = self::getContainer()->get(EntityManagerInterface::class))->persist($car);
+        $entityManager->flush();
+
+        $carRepository = $entityManager->getRepository(Car::class);
+
+        $httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json']]);
+
+        // when
+        $response = $httpClient->request('DELETE', sprintf('/cars/%d', $car->getId()));
+
+        // then
+        $this->expectException(TransportException::class);
+        $this->expectExceptionMessage('Response body is empty.');
+        $response->toArray();
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+        $this->assertNull($carRepository->findOneBy(['id' => $car->getId()]));
+
+        $httpClient->request('GET', sprintf('/cars/%d', $car->getId()));
+        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+    }
+
+    public function testShouldNotRemoveTheCar(): void
+    {
+        // given
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $carRepository = $entityManager->getRepository(Car::class);
+        $httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json']]);
+
+        // when
+        $response = $httpClient->request('DELETE', sprintf('/cars/%d', 0));
+
+        // then
+        $this->expectException(ClientException::class);
+        $response->toArray();
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+        $this->assertNull($carRepository->findOneBy(['id' => 0]));
     }
     private function countOfCarsInCollectionProvider(): iterable
     {
