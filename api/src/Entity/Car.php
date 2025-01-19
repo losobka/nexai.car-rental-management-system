@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
@@ -79,10 +80,12 @@ class Car
     private bool $rented = false;
 
     #[ORM\Column(precision: 5)]
+    #[ApiProperty(readable: true, writable: false)]
     #[Assert\Range(min: -90, max: 90)]
     private float $currentLat = 0;
 
     #[ORM\Column(precision: 5)]
+    #[ApiProperty(readable: true, writable: false)]
     #[Assert\Range(min: -90, max: 90)]
     private float $currentLng = 0;
 
