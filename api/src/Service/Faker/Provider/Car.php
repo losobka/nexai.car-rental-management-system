@@ -12,8 +12,6 @@ class Car extends Base
 {
     public static VinGenerator $vinGenerator;
     public static RegistrationNumberGenerator $registrationNumberGenerator;
-    public static array $generatedRegistrationNumbers = [];
-    public static array $generatedVins = [];
 
     public function __construct(Generator $generator, VinGenerator $vinGenerator, RegistrationNumberGenerator $registrationNumberGenerator)
     {
@@ -30,12 +28,12 @@ class Car extends Base
             } catch (RandomException) {
                 unset($vin);
             }
-        } while (isset($vin) && is_int(array_search($vin, self::$generatedVins, true)));
+        } while (isset($vin));
 
         return $vin;
     }
 
-    public static function carRegistrationNumber(): string
+    public static function registrationNumber(): string
     {
         do {
             try {
@@ -47,7 +45,7 @@ class Car extends Base
             } catch (RandomException) {
                 unset($registrationNumber);
             }
-        } while (isset($registrationNumber) && is_int(array_search($registrationNumber, self::$generatedRegistrationNumbers, true)));
+        } while (isset($registrationNumber));
 
         return $registrationNumber;
     }

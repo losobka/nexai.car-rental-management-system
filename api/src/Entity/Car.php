@@ -76,7 +76,7 @@ class Car
     private ?string $customerEmail = null;
 
     #[ORM\Column(length: 64, nullable: true)]
-    #[Assert\Regex(pattern: '@^[A-Za-z\d/]{3,32}, \d{2}-\d{4} [A-Za-z\d/]{3,32}$@')]
+    #[Assert\Regex(pattern: '@^ul\. [:alnum]{3,32}, \d{2}-\d{4} [:alnum]{3,18}$@u')]
     private ?string $customerAddress = null;
 
     #[ORM\Column(precision: 5)]

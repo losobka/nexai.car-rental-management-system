@@ -22,16 +22,16 @@ final class CarFactory extends PersistentProxyObjectFactory
     {
         $defaults = [
             'brand' => self::faker()->randomElement(Car::AVAILABLE_BRANDS),
-            'registrationNumber' => self::faker()->carRegistrationNumber(),
+            'registrationNumber' => self::faker()->unique()->registrationNumber(),
+            'vin' => self::faker()->unique()->vin(),
+            'rented' => self::faker()->randomElement([true, false]),
             'latitude' => self::faker()->latitude(),
             'longitude' => self::faker()->longitude(),
-            'rented' => self::faker()->randomElement([true, false]),
-            'vin' => self::faker()->vin(),
         ];
 
         if ($defaults['rented']) {
             $defaults['customerEmail'] = mb_strtolower(self::faker()->email());
-            $defaults['customerAddress'] = 'ul. ' . self::faker()->address();
+            $defaults['customerAddress'] = mb_substr('ul. ' . self::faker()->address(), 0, 64);
         }
 
         return $defaults;
