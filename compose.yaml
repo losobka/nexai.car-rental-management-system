@@ -1,0 +1,9 @@
+services:
+    database:
+        image: mysql:9.1.0
+        restart: unless-stopped
+        environment:
+            MYSQL_ROOT_PASSWORD: password
+            MYSQL_DATABASE: main
+        ports:
+            - 3306:3306
