@@ -6,6 +6,7 @@ use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use App\Entity\Car;
 use App\Factory\CarFactory;
 use App\Repository\CarRepository;
+use App\Story\DefaultCarsStory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpClient\Exception\ClientException;
 use Symfony\Component\HttpClient\Exception\TransportException;
@@ -27,9 +28,8 @@ class CarTest extends ApiTestCase
     public function testShouldReturnCollectionOfCarsWithNElements(int $expectedCountOfCars): void
     {
         // given
-        CarFactory::createMany($expectedCountOfCars);
+        self::getContainer()->get(DefaultCarsStory::class)->loadMany($expectedCountOfCars);
 
-        $countOfCarsByCarFactory = self::getContainer()->get(CarFactory::class)::count();
         $countOfCarsByCarRepository = self::getContainer()->get(CarRepository::class)->count();
         $httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json']]);
         $serializer = self::getContainer()->get(SerializerInterface::class);
@@ -49,7 +49,6 @@ class CarTest extends ApiTestCase
             $serializer->normalize($response->toArray(false), 'json', [AbstractObjectNormalizer::SKIP_NULL_VALUES => true])
         );
         $this->assertCount($expectedCountOfCars,  $deserializedResponse);
-        $this->assertSame($expectedCountOfCars, $countOfCarsByCarFactory);
         $this->assertSame($expectedCountOfCars, $countOfCarsByCarRepository);
 
         CarFactory::truncate();
@@ -175,7 +174,7 @@ class CarTest extends ApiTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
         $this->assertNull($carRepository->findOneBy(['id' => 0]));
     }
-    private function countOfCarsInCollectionProvider(): iterable
+    public static function countOfCarsInCollectionProvider(): iterable
     {
         yield 'empty' => [0];
         yield '20' => [20];
@@ -184,7 +183,7 @@ class CarTest extends ApiTestCase
     private function validCarProvider(): iterable
     {
         yield 'not rented' => [1, 'BMW', 'TEST123', 'DFMDU34X8MUD84229', false, null, null];
-        yield 'rented' => [2, 'Audi', 'WA4567', 'YV1RS61T532259048', true, 'imie.nazwisko@example.nextai', 'ul. Sezamkowa, 11-222 Warszawa'];
+        yield 'rented' => [1, 'Audi', 'WA4567', 'YV1RS61T532259048', true, 'imie.nazwisko@example.nextai', 'ul. Sezamkowa, 11-222 Warszawa'];
     }
 
     private function invalidCarProvider(): iterable

@@ -20,16 +20,13 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
-    App\Service\Faker\Provider\Car: ~
-
     app.faker:
         class: Faker\Generator
         factory: ['Faker\Factory', 'create']
         arguments:
             $locale: 'pl_PL'
-        calls:
-            - [ addProvider, [ '@App\Service\Faker\Provider\Car' ] ]
 
     Faker\Generator: '@app.faker'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
