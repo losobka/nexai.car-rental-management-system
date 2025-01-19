@@ -2,12 +2,27 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Repository\CarRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: CarRepository::class)]
+#[ApiResource(
+    operations: [
+        new Get(),
+        new GetCollection(paginationEnabled: false),
+        new Post(),
+        new Put(),
+        new Delete()
+    ]
+)]
 class Car
 {
     public const AVAILABLE_BRANDS = [
