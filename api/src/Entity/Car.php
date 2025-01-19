@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\CarRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: CarRepository::class)]
 class Car
@@ -37,27 +39,36 @@ class Car
     private ?int $id = null;
 
     #[ORM\Column(length: 64)]
+    #[Assert\Choice(choices: self::AVAILABLE_BRANDS)]
     private string $brand = '';
 
     #[ORM\Column(length: 12, unique: true)]
+    #[Assert\Length(min: 3, max: 12)]
+    #[Assert\Regex(pattern: '@^[A-Z]{1}[A-Z\d]{2,11}$@')]
     private string $registrationNumber = '';
 
     #[ORM\Column(length: 17, unique: true)]
+    #[Assert\Length(min: 17, max: 17)]
+    #[Assert\Regex(pattern: '@^[A-Z\d]{17}$@')]
     private string $vin = '';
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Assert\Email]
     private ?string $customerEmail = null;
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Regex(pattern: '@^[A-Za-z\d/]{3,32}, \d{2}-\d{4} [A-Za-z\d/]{3,32}$@')]
     private ?string $customerAddress = null;
 
     #[ORM\Column]
     private bool $rented = false;
 
     #[ORM\Column(precision: 5)]
+    #[Assert\Range(min: -90, max: 90)]
     private float $currentLat = 0;
 
     #[ORM\Column(precision: 5)]
+    #[Assert\Range(min: -90, max: 90)]
     private float $currentLng = 0;
 
     public function getId(): ?int
@@ -159,5 +170,53 @@ class Car
         $this->currentLng = $currentLng;
 
         return $this;
+    }
+
+    #[Assert\Callback]
+    public function validateIfCustomerEmailIsEmptyWhenCarIsNotRented(ExecutionContextInterface $context, mixed
+    $payload): void
+    {
+        if ($this->isRented() || empty($this->getCustomerEmail()))
+            return;
+
+        $context->buildViolation('Customer email address should be empty')
+            ->atPath('customerEmail')
+            ->addViolation();
+    }
+
+    #[Assert\Callback]
+    public function validateIfCustomerAddressIsEmptyWhenCarIsNotRented(ExecutionContextInterface $context, mixed
+                                                                                               $payload): void
+    {
+        if ($this->isRented() || empty($this->getCustomerAddress()))
+            return;
+
+        $context->buildViolation('Customer address should be empty')
+            ->atPath('customerAddress')
+            ->addViolation();
+    }
+
+    #[Assert\Callback]
+    public function validateIfCustomerEmailIsProvidedWhenCarIsRented(ExecutionContextInterface $context, mixed
+                                                                                                 $payload): void
+    {
+        if (false === $this->isRented() || false === empty($this->getCustomerEmail()))
+            return;
+
+        $context->buildViolation('Customer email address is required')
+            ->atPath('customerEmail')
+            ->addViolation();
+    }
+
+    #[Assert\Callback]
+    public function validateIfCustomerAddressIsProvidedWhenCarIsRented(ExecutionContextInterface $context, mixed
+                                                                                                 $payload): void
+    {
+        if (false === $this->isRented() || false === empty($this->getCustomerAddress()))
+            return;
+
+        $context->buildViolation('Customer address is required')
+            ->atPath('customerAddress')
+            ->addViolation();
     }
 }
