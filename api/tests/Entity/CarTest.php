@@ -61,9 +61,9 @@ class CarTest extends ApiTestCase
     {
         // given
         $car = (object) [
-            'brand' => 'BMW',
-            'registrationNumber' => 'TEST123',
-            'vin' => 'DFMDU34X8MUD84229',
+            'brand' => $brand,
+            'registrationNumber' => $registrationNumber,
+            'vin' => $vin,
             'rented' => $rented,
             'customerEmail' => $customerEmail,
             'customerAddress' => $customerAddress
@@ -126,6 +126,56 @@ class CarTest extends ApiTestCase
         CarFactory::truncate();
     }
 
+    /**
+     * @dataProvider validCarUpdateProvider
+     */
+    public function testShouldUpdateTheCar(string $brand, string $registrationNumber, string $vin, bool $rented, string | null $customerEmail, string | null $customerAddress): void
+    {
+        // given
+        $car = new Car;
+        $car->setBrand('BMW');
+        $car->setRegistrationNumber('GS123456');
+        $car->setVin('VF1KZ1A054Y123456');
+        $car->setRented(false);
+
+        ($entityManager = self::getContainer()->get(EntityManagerInterface::class))->persist($car);
+        $entityManager->flush();
+
+        $carRepository = $entityManager->getRepository(Car::class);
+
+        $carBeforeUpdate = $carRepository->find($car->getId());
+
+        $carDataToPersist = (object) [
+            'brand' => $brand,
+            'registrationNumber' => $registrationNumber,
+            'vin' => $vin,
+            'rented' => $rented,
+            'customerEmail' => $customerEmail,
+            'customerAddress' => $customerAddress
+        ];
+        $httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json']]);
+        $serializer = self::getContainer()->get(SerializerInterface::class);
+
+        // when
+        $response = $httpClient->request('PUT', sprintf('/cars/%d', $car->getId()), ['json' => $carDataToPersist]);
+
+        // then
+        $deserializedResponse = $response->toArray(false);
+        $carAfterUpdate = $carRepository->find($car->getId());
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        $this->assertResponseHeaderSame('Content-Type','application/json; charset=utf-8');
+        $this->assertMatchesResourceItemJsonSchema(Car::class);
+        $this->assertSame($deserializedResponse['brand'], $carAfterUpdate->getBrand());
+        $this->assertSame($deserializedResponse['registrationNumber'], $carAfterUpdate->getRegistrationNumber());
+        $this->assertSame($deserializedResponse['vin'], $carAfterUpdate->getVin());
+        $this->assertSame($deserializedResponse['rented'], $carAfterUpdate->isRented());
+        $this->assertSame($deserializedResponse['customerEmail'], $carAfterUpdate->getCustomerEmail());
+        $this->assertSame($deserializedResponse['customerAddress'], $carAfterUpdate->getCustomerAddress());
+
+        CarFactory::truncate();
+    }
+
     public function testShouldRemoveTheCar(): void
     {
         // given
@@ -180,13 +230,13 @@ class CarTest extends ApiTestCase
         yield '20' => [20];
     }
 
-    private function validCarProvider(): iterable
+    public static function validCarProvider(): iterable
     {
         yield 'not rented' => [1, 'BMW', 'TEST123', 'DFMDU34X8MUD84229', false, null, null];
         yield 'rented' => [1, 'Audi', 'WA4567', 'YV1RS61T532259048', true, 'imie.nazwisko@example.nextai', 'ul. Sezamkowa, 11-222 Warszawa'];
     }
 
-    private function invalidCarProvider(): iterable
+    public static function invalidCarProvider(): iterable
     {
         yield 'with incorrect brand' => [1, 'incorrect-brand', 'TEST123', 'DFMDU34X8MUABC229', false, null, null, 'The value you selected is not a valid choice.'];
         yield 'with too short registration number' => [2, 'Audi', 'T', 'KMHCM36C05U123456', false, null, null, 'Invalid registration number'];
@@ -197,4 +247,11 @@ class CarTest extends ApiTestCase
         yield 'not rented with customer email' => [7, 'Ferrari', 'WA5678CD', 'WDBUF56J76A123456', false, 'imie.nazwisko@example.nextai', null, 'Customer email address should be empty'];
         yield 'not rented with customer address' => [8, 'Volvo', 'PO4321EF', 'WBA3A5C59FF123456', false, null, 'ul. Sezamkowa, 11-222 Warszawa', 'Customer address should be empty'];
     }
+
+    public static function validCarUpdateProvider(): iterable
+    {
+        yield 'not rented' => ['BMW', 'TEST123', 'DFMDU34X8MUD84229', false, null, null];
+        yield 'rented' => ['Audi', 'WA4567', 'YV1RS61T532259048', true, 'imie.nazwisko@example.nextai', 'ul. Sezamkowa, 11-222 Warszawa'];
+    }
+
 }
