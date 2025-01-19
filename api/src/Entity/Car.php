@@ -59,13 +59,11 @@ class Car
     private string $brand = '';
 
     #[ORM\Column(length: 12, unique: true)]
-    #[Assert\Length(min: 3, max: 12)]
-    #[Assert\Regex(pattern: '@^[A-Z]{1}[A-Z\d]{2,11}$@')]
+    #[Assert\Regex(pattern: '@^[A-Z]{1}[A-Z\d]{2,11}$@', message: 'Invalid registration number')]
     private string $registrationNumber = '';
 
     #[ORM\Column(length: 17, unique: true)]
-    #[Assert\Length(min: 17, max: 17)]
-    #[Assert\Regex(pattern: '@^[A-Z\d]{17}$@')]
+    #[Assert\Regex(pattern: '@^[A-Z\d]{17}$@', message: 'Invalid VIN')]
     private string $vin = '';
 
     #[ORM\Column]
@@ -76,7 +74,6 @@ class Car
     private ?string $customerEmail = null;
 
     #[ORM\Column(length: 64, nullable: true)]
-    #[Assert\Regex(pattern: '@^ul\. [:alnum]{3,32}, \d{2}-\d{4} [:alnum]{3,18}$@u')]
     private ?string $customerAddress = null;
 
     #[ORM\Column(precision: 5)]
@@ -168,7 +165,7 @@ class Car
 
     public function getLatitude(): float
     {
-        return $this->latitude;
+        return round($this->latitude, 5);
     }
 
     public function setLatitude(float $latitude): static
@@ -180,7 +177,7 @@ class Car
 
     public function getLongitude(): float
     {
-        return $this->longitude;
+        return round($this->longitude, 5);
     }
 
     public function setLongitude(float $longitude): static
@@ -232,5 +229,17 @@ class Car
         $context->buildViolation('Customer address is required')
             ->atPath('customerAddress')
             ->addViolation();
+    }
+
+    #[Assert\Callback]
+    public function validateCustomerAddress(ExecutionContextInterface $context, mixed $payload): void
+    {
+        if (null === $this->getCustomerAddress())
+            return;
+
+        if (false === preg_match(pattern: '@^ul\. [:alnum]{3,32}, \d{2}-\d{4} [:alnum]{3,18}$@u', subject: $this->getCustomerAddress()))
+            $context->buildViolation('Invalid customer address format')
+                ->atPath('customerAddress')
+                ->addViolation();
     }
 }
