@@ -11,3 +11,28 @@ if (method_exists(Dotenv::class, 'bootEnv')) {
 if ($_SERVER['APP_DEBUG']) {
     umask(0000);
 }
+
+
+passthru(sprintf(
+    'APP_ENV=%s php "%s/../bin/console" cache:clear --no-warmup',
+    $_ENV['APP_ENV'],
+    __DIR__
+));
+
+passthru(sprintf(
+    'APP_ENV=%s php "%s/../bin/console" doctrine:database:drop --force --no-interaction',
+    $_ENV['APP_ENV'],
+    __DIR__
+));
+
+passthru(sprintf(
+    'APP_ENV=%s php "%s/../bin/console" doctrine:database:create --no-interaction',
+    $_ENV['APP_ENV'],
+    __DIR__
+));
+
+passthru(sprintf(
+    'APP_ENV=%s php "%s/../bin/console" doctrine:schema:create --no-interaction',
+    $_ENV['APP_ENV'],
+    __DIR__
+));
