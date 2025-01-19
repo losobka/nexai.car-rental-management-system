@@ -57,7 +57,7 @@ class CarTest extends ApiTestCase
             'brand' => 'BMW',
             'registrationNumber' => 'TEST123',
             'vin' => 'DFMDU34X8MUD84229',
-            'rented' => false,
+            'rented' => $rented,
             'customerEmail' => $customerEmail,
             'customerAddress' => $customerAddress
         ];
@@ -77,7 +77,7 @@ class CarTest extends ApiTestCase
             $serializer->normalize(
                 array_merge(
                     ['id' => $expectedId],
-                    (array) $car,
+                    array_filter((array) $car, fn ($value) => null !== $value),
                     ['latitude' => 0.0, 'longitude' => 0.0]
                 ),
                 'json',
