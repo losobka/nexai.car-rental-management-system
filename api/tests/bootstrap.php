@@ -12,8 +12,6 @@ if ($_SERVER['APP_DEBUG']) {
     umask(0000);
 }
 
-ob_start();
-
 foreach ([
     'cache:clear --no-warmup',
     'doctrine:database:drop --if-exists --force',
@@ -21,14 +19,16 @@ foreach ([
     'doctrine:schema:create',
     'doctrine:fixtures:load --no-interaction --append'
 ] as $command) {
+    ob_start();
+
     passthru(sprintf(
         'APP_ENV=%s php "%s/../bin/console" %s 2>&1',
         $_ENV['APP_ENV'],
         __DIR__,
-        $consoleCommand
+        $command
     ));
+
+    $output = ob_get_contents();
+
+    ob_end_clean();
 }
-
-$output = ob_get_contents();
-
-ob_end_clean();
