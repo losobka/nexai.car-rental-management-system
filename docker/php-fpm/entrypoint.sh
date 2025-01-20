@@ -21,4 +21,4 @@ done
 [ $CREATE_SCHEMA == true ] && bin/console doctrine:schema:create
 [ $LOAD_FIXTURES == true ] && bin/console doctrine:fixtures:load --no-interaction --append
 
-php-fpm
+php-fpm -R

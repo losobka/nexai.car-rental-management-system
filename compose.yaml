@@ -24,6 +24,7 @@ services:
             - 9000
         volumes:
             - ./docker/php-fpm:/mnt/php-fpm
+            - ./docker/php-fpm/usr/local/etc/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf:ro
 
     nginx:
         image: nginx:1.27
