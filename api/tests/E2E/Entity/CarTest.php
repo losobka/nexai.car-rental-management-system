@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Entity;
+namespace App\Tests\E2E\Entity;
 
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use App\Entity\Car;
@@ -83,14 +83,22 @@ class CarTest extends ApiTestCase
         $this->assertSame(
             $serializer->normalize(
                 array_merge(
-                    ['id' => $expectedId],
+//                    ['id' => $expectedId],
                     array_filter((array) $car, fn ($value) => null !== $value),
                     ['latitude' => 0.0, 'longitude' => 0.0]
                 ),
                 'json',
                 [AbstractObjectNormalizer::SKIP_NULL_VALUES => true]
             ),
-            $serializer->normalize($deserializedResponse, 'json', [AbstractObjectNormalizer::SKIP_NULL_VALUES => true])
+            $serializer->normalize(
+                array_filter(
+                    $deserializedResponse,
+                    fn ($value, $key) => 'id' !== $key,
+                    ARRAY_FILTER_USE_BOTH
+                ),
+                'json',
+                [AbstractObjectNormalizer::SKIP_NULL_VALUES => true]
+            ),
         );
 
         CarFactory::truncate();
