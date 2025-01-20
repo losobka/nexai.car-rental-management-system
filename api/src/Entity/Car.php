@@ -52,6 +52,9 @@ class Car
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[ApiProperty(openapiContext: [
+        'example' => 1
+    ])]
     private ?int $id = null;
 
     #[ORM\Column(length: 64)]
@@ -60,10 +63,16 @@ class Car
 
     #[ORM\Column(length: 12, unique: true)]
     #[Assert\Regex(pattern: '@^[A-Z]{1}[A-Z\d]{2,11}$@', message: 'Invalid registration number')]
+    #[ApiProperty(openapiContext: [
+        'example' => 'ZK3666'
+    ])]
     private string $registrationNumber = '';
 
     #[ORM\Column(length: 17, unique: true)]
     #[Assert\Regex(pattern: '@^[A-Z\d]{17}$@', message: 'Invalid VIN')]
+    #[ApiProperty(openapiContext: [
+        'example' => 'K9ITO0C2W2BR1N12M'
+    ])]
     private string $vin = '';
 
     #[ORM\Column]
@@ -71,9 +80,16 @@ class Car
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Email]
+    #[ApiProperty(openapiContext: [
+        'description' => 'Please type only when the car is rented'
+    ])]
     private ?string $customerEmail = null;
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[ApiProperty(openapiContext: [
+        'description' => 'Please type only when the car is rented',
+        'example' => 'ul. Kwiatowa 1/10B, 03-528 Warszawa'
+    ])]
     private ?string $customerAddress = null;
 
     #[ORM\Column(precision: 5)]
