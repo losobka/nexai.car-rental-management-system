@@ -12,27 +12,23 @@ if ($_SERVER['APP_DEBUG']) {
     umask(0000);
 }
 
+ob_start();
 
-passthru(sprintf(
-    'APP_ENV=%s php "%s/../bin/console" cache:clear --no-warmup',
-    $_ENV['APP_ENV'],
-    __DIR__
-));
+foreach ([
+    'cache:clear --no-warmup',
+    'doctrine:database:drop --if-exists --force',
+    'doctrine:database:create',
+    'doctrine:schema:create',
+    'doctrine:fixtures:load --no-interaction --append'
+] as $command) {
+    passthru(sprintf(
+        'APP_ENV=%s php "%s/../bin/console" %s 2>&1',
+        $_ENV['APP_ENV'],
+        __DIR__,
+        $consoleCommand
+    ));
+}
 
-passthru(sprintf(
-    'APP_ENV=%s php "%s/../bin/console" doctrine:database:drop --force --no-interaction',
-    $_ENV['APP_ENV'],
-    __DIR__
-));
+$output = ob_get_contents();
 
-passthru(sprintf(
-    'APP_ENV=%s php "%s/../bin/console" doctrine:database:create --no-interaction',
-    $_ENV['APP_ENV'],
-    __DIR__
-));
-
-passthru(sprintf(
-    'APP_ENV=%s php "%s/../bin/console" doctrine:schema:create --no-interaction',
-    $_ENV['APP_ENV'],
-    __DIR__
-));
+ob_end_clean();
