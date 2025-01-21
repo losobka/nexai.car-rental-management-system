@@ -21,6 +21,7 @@ services:
         exclude:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
+            - '../src/Embeddable/'
             - '../src/Kernel.php'
 
     app.service.latitude_generator: '@App\Service\LatitudeGenerator'
