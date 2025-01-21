@@ -170,7 +170,7 @@ class CarTest extends ApiTestCase
         $serializer = self::getContainer()->get(SerializerInterface::class);
 
         // when
-        $response = $httpClient->request('PUT', sprintf('/cars/%d', $car->getId()), ['json' => $carDataToPersist]);
+        $response = $httpClient->request('PUT', sprintf('/cars/%s', $car->getVin()), ['json' => $carDataToPersist]);
 
         // then
         $deserializedResponse = $response->toArray(false);
@@ -180,7 +180,7 @@ class CarTest extends ApiTestCase
         $this->assertResponseHeaderSame('Content-Type','application/json; charset=utf-8');
         $this->assertMatchesResourceItemJsonSchema(Car::class);
         $this->assertSame($deserializedResponse['brand'], $carAfterUpdate->getBrand());
-        $this->assertSame($deserializedResponse['registration'], $carAfterUpdate->getRegistrationNumber());
+        $this->assertSame($deserializedResponse['registration'], $carAfterUpdate->getRegistration());
         $this->assertSame($deserializedResponse['vin'], $carAfterUpdate->getVin());
         $this->assertSame($deserializedResponse['rented'], $carAfterUpdate->isRented());
         $this->assertSame($deserializedResponse['customerEmail'], $carAfterUpdate->getCustomerEmail());
@@ -209,7 +209,7 @@ class CarTest extends ApiTestCase
         $httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json']]);
 
         // when
-        $response = $httpClient->request('DELETE', sprintf('/cars/%d', $car->getId()));
+        $response = $httpClient->request('DELETE', sprintf('/cars/%s', $car->getRegistration()));
 
         // then
         $this->expectException(TransportException::class);
@@ -219,7 +219,7 @@ class CarTest extends ApiTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
         $this->assertNull($carRepository->findOneBy(['id' => $car->getId()]));
 
-        $httpClient->request('GET', sprintf('/cars/%d', $car->getId()));
+        $httpClient->request('GET', sprintf('/cars/%s', $car->getVin()));
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
     }
 
@@ -255,10 +255,10 @@ class CarTest extends ApiTestCase
     public static function invalidCarProvider(): iterable
     {
         yield 'with incorrect brand' => [1, 'incorrect-brand', 'TEST123', 'DFMDU34X8MUABC229', false, null, null, 'The value you selected is not a valid choice.'];
-        yield 'with too short registration number' => [2, 'Audi', 'T', 'KMHCM36C05U123456', false, null, null, 'Invalid registration number'];
-        yield 'with too long registration number' => [3, 'BMW', 'T123456789ABC', 'DFMDU34X8MUD84229', false, null, null, 'Invalid registration number'];
-        yield 'with invalid registration number (number as first character)' => [4, 'Toyota', '1INVALID', 'DFMDU34X8MUD84229', false, null, null, 'Invalid registration number'];
-        yield 'with invalid vin (number as first character)' => [5, 'Honda', '1INVALID', '9FMDU34X8MUD8422D', false, null, null, 'Invalid registration number'];
+        yield 'with too short registration number' => [2, 'Audi', 'T', 'KMHCM36C05U123456', false, null, null, 'Invalid registration'];
+        yield 'with too long registration number' => [3, 'BMW', 'T123456789ABC', 'DFMDU34X8MUD84229', false, null, null, 'Invalid registration'];
+        yield 'with Invalid registration (number as first character)' => [4, 'Toyota', '1INVALID', 'DFMDU34X8MUD84229', false, null, null, 'Invalid registration'];
+        yield 'with invalid vin (number as first character)' => [5, 'Honda', '1INVALID', '9FMDU34X8MUD8422D', false, null, null, 'Invalid registration'];
         yield 'rented with invalid customer email' => [6, 'Tesla', 'KR1234AB', 'HGCM82633A1234567', true, 'invalid_email', 'ul. Sezamkowa 5, 11-222 WarszAwa', 'This value is not a valid email address.'];
         yield 'not rented with customer email' => [7, 'Ferrari', 'WA5678CD', 'WDBUF56J76A123456', false, 'imie.nazwisko@example.nextai', null, 'Customer email address should be empty'];
         yield 'not rented with customer address' => [8, 'Volvo', 'PO4321EF', 'WBA3A5C59FF123456', false, null, 'ul. Sezamkowa, 11-222 Warszawa', 'Customer address should be empty'];
