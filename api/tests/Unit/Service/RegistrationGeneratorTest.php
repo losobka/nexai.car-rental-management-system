@@ -2,54 +2,56 @@
 
 namespace App\Tests\Unit\Service;
 
-use App\Service\RegistrationNumberGenerator;
+use App\Service\RegistrationGenerator;
 use OutOfBoundsException;
-use PHPUnit\Framework\TestCase;
 use Random\RandomException;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-class RegistrationNumberGeneratorTest extends TestCase
+class RegistrationGeneratorTest extends KernelTestCase
 {
-    private RegistrationNumberGenerator $registrationNumberGenerator;
+    private RegistrationGenerator $registrationGenerator;
+    private int $registrationMaxLength;
 
     public function setUp(): void
     {
         parent::setUp();
-        $this->registrationNumberGenerator = new RegistrationNumberGenerator();
+        $this->registrationGenerator = self::getContainer()->get(RegistrationGenerator::class);
+        $this->registrationMaxLength = self::getContainer()->getParameter('app.registration.max_length');
     }
 
     public function testTheFistCharacterOfGeneratedVinIsAUppercaseLetter(): void
     {
         // given
-        $registrationNumberGenerator = $this->registrationNumberGenerator;
+        $registrationGenerator = $this->registrationGenerator;
         $allowedPrefixLetters = range('A', 'Z');
 
         // when
         try {
-            $registrationNumber = $registrationNumberGenerator->generate();
+            $registration = $registrationGenerator->generate();
         } catch (RandomException $e) {
             $this->markTestIncomplete($e->getMessage());
         }
 
         // then
-        $this->assertContains(mb_substr($registrationNumber, 0, 1), $allowedPrefixLetters);
+        $this->assertContains(mb_substr($registration, 0, 1), $allowedPrefixLetters);
     }
 
     public function testGeneratorThrowsOutOfBoundExceptionWhenProvidedPrefixIsLongerThanAllowedRegistrationNumberLength
     (): void
     {
         // given
-        $registrationNumberGenerator = $this->registrationNumberGenerator;
+        $registrationGenerator = $this->registrationGenerator;
 
         // then
         $this->expectException(OutOfBoundsException::class);
         $this->expectExceptionMessage(sprintf(
             'Registration number cannot be longer than %d characters',
-            RegistrationNumberGenerator::MAX_LENGTH
+            $this->registrationMaxLength
         ));
 
         // when
         try {
-            $registrationNumberGenerator->generate(mb_str_pad('T', RegistrationNumberGenerator::MAX_LENGTH + 1));
+            $registrationGenerator->generate(mb_str_pad('T', $this->registrationMaxLength + 1));
         } catch (RandomException $e) {
             $this->markTestIncomplete($e->getMessage());
         }
@@ -58,17 +60,17 @@ class RegistrationNumberGeneratorTest extends TestCase
     public function testGeneratedRegistrationNumberLengthIsCorrect(): void
     {
         // given
-        $registrationNumberGenerator = $this->registrationNumberGenerator;
+        $registrationGenerator = $this->registrationGenerator;
 
         // when
         try {
-            $registrationNumber = $registrationNumberGenerator->generate();
+            $registration = $registrationGenerator->generate();
         } catch (RandomException $e) {
             $this->markTestIncomplete($e->getMessage());
         }
 
         // then
-        $this->assertLessThanOrEqual(RegistrationNumberGenerator::MAX_LENGTH, mb_strlen($registrationNumber));
-        $this->assertLessThanOrEqual(RegistrationNumberGenerator::MAX_LENGTH, strlen($registrationNumber));
+        $this->assertLessThanOrEqual($this->registrationMaxLength, mb_strlen($registration));
+        $this->assertLessThanOrEqual($this->registrationMaxLength, strlen($registration));
     }
 }

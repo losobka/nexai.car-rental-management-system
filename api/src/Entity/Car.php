@@ -18,7 +18,7 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 #[ApiResource(
     operations: [
         new Get(),
-        new GetCollection(paginationEnabled: false),
+        new GetCollection(),
         new Post(),
         new Put(),
         new Delete()
@@ -49,12 +49,18 @@ class Car
         'Volvo'
     ];
 
+    public const REGISTRATION_REGEX = '@^[A-Z]{1}[A-Z\d]{2,11}$@';
+    public const VIN_REGEX = '@^[A-Z]{1}[A-Z\d]{16}$@';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[ApiProperty(openapiContext: [
-        'example' => 1
-    ])]
+    #[ApiProperty(
+        identifier: false,
+        openapiContext: [
+            'example' => 1
+        ]
+    )]
     private ?int $id = null;
 
     #[ORM\Column(length: 64)]
@@ -62,17 +68,20 @@ class Car
     private string $brand = '';
 
     #[ORM\Column(length: 12, unique: true)]
-    #[Assert\Regex(pattern: '@^[A-Z]{1}[A-Z\d]{2,11}$@', message: 'Invalid registration number')]
+    #[Assert\Regex(pattern: self::REGISTRATION_REGEX, message: 'Invalid registration')]
     #[ApiProperty(openapiContext: [
         'example' => 'ZK3666'
     ])]
-    private string $registrationNumber = '';
+    private string $registration = '';
 
     #[ORM\Column(length: 17, unique: true)]
-    #[Assert\Regex(pattern: '@^[A-Z\d]{17}$@', message: 'Invalid VIN')]
-    #[ApiProperty(openapiContext: [
-        'example' => 'K9ITO0C2W2BR1N12M'
-    ])]
+    #[Assert\Regex(pattern: self::VIN_REGEX, message: 'Invalid VIN')]
+    #[ApiProperty(
+        identifier: true,
+        openapiContext: [
+            'example' => 'K9ITO0C2W2BR1N12M'
+        ]
+    )]
     private string $vin = '';
 
     #[ORM\Column]
@@ -92,12 +101,12 @@ class Car
     ])]
     private ?string $customerAddress = null;
 
-    #[ORM\Column(precision: 5)]
+    #[ORM\Column]
     #[ApiProperty(readable: true, writable: false)]
     #[Assert\Range(min: -90, max: 90)]
     private float $latitude = 0;
 
-    #[ORM\Column(precision: 5)]
+    #[ORM\Column]
     #[ApiProperty(readable: true, writable: false)]
     #[Assert\Range(min: -180, max: 180)]
     private float $longitude = 0;
@@ -119,14 +128,14 @@ class Car
         return $this;
     }
 
-    public function getRegistrationNumber(): string
+    public function getRegistration(): string
     {
-        return $this->registrationNumber;
+        return $this->registration;
     }
 
-    public function setRegistrationNumber(string $registrationNumber): static
+    public function setRegistration(string $registration): static
     {
-        $this->registrationNumber = $registrationNumber;
+        $this->registration = $registration;
 
         return $this;
     }
