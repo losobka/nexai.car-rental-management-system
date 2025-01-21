@@ -2,22 +2,20 @@
 
 namespace App\Tests\Unit\Service;
 
+use App\Entity\Car;
 use App\Service\VinGenerator;
-use PHPUnit\Framework\TestCase;
 use Random\RandomException;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-class VinGeneratorTest extends TestCase
+class VinGeneratorTest extends KernelTestCase
 {
     private VinGenerator $vinGenerator;
-
-    public function setUp(): void
-    {
-        parent::setUp();
-        $this->vinGenerator = new VinGenerator();
+    public function __construct(string $name) {
+        parent::__construct($name);
+        $this->vinGenerator = self::getContainer()->get(VinGenerator::class);
     }
 
-    public function testTheVinContainsOnlyUppercaseLettersAndNumbers():
-    void
+    public function testTheVinContainsOnlyUppercaseLettersAndNumbers(): void
     {
         // given
         $vinGenerator = $this->vinGenerator;
@@ -30,12 +28,10 @@ class VinGeneratorTest extends TestCase
         }
 
         // then
-        $this->assertMatchesRegularExpression(sprintf('@^[A-Z]{1}[A-Z0-9]{%d}$@', (VinGenerator::LENGTH - 1))
-        , $vin);
+        $this->assertMatchesRegularExpression(Car::VIN_REGEX, $vin);
     }
 
-    public function testTheFistCharacterOfVinIsALetter():
-    void
+    public function testTheFistCharacterOfVinIsALetter(): void
     {
         // given
         $vinGenerator = $this->vinGenerator;
@@ -65,7 +61,7 @@ class VinGeneratorTest extends TestCase
         }
 
         // then
-        $this->assertLessThanOrEqual(VinGenerator::LENGTH, mb_strlen($vin));
-        $this->assertLessThanOrEqual(VinGenerator::LENGTH, strlen($vin));
+        $this->assertLessThanOrEqual(17, mb_strlen($vin));
+        $this->assertLessThanOrEqual(17, strlen($vin));
     }
 }

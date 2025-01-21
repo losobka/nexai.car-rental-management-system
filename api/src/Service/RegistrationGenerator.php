@@ -6,32 +6,14 @@ namespace App\Service;
 
 use OutOfBoundsException;
 use Random\RandomException;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
-class RegistrationNumberGenerator
-{
-    public const MAX_LENGTH = 12;
-    public const COMMON_CITY_PREFIXES = [
-        'WA',
-        'KR',
-        'PO',
-        'GD',
-        'WR',
-        'LU',
-        'BI',
-        'SZ',
-        'KI',
-        'OL',
-        'KA',
-        'RZ',
-        'ZK',
-        'OP',
-        'EL',
-        'PL',
-        'RA',
-        'TB',
-        'OS',
-        'WN',
-    ];
+class RegistrationGenerator
+{   public function __construct(
+        #[Autowire('%app.registration.max_length%')]
+        private readonly int $maxLength
+    ) {
+    }
 
     /**
      * @throws RandomException
@@ -42,16 +24,16 @@ class RegistrationNumberGenerator
         if (null === $prefix)
             $prefix = chr(rand(65, 90));
 
-        if (($prefixLength = (int) mb_strlen($prefix)) > self::MAX_LENGTH)
+        if (($prefixLength = (int) mb_strlen($prefix)) > $this->maxLength)
             throw new OutOfBoundsException(sprintf('Registration number cannot be longer than %d characters',
-                self::MAX_LENGTH));
+                $this->maxLength));
 
         return mb_strtoupper(
             $prefix
                 . mb_substr(
                     md5(random_bytes(1024)),
                     0,
-                    random_int($prefixLength + 1, self::MAX_LENGTH - $prefixLength)
+                    random_int($prefixLength + 1, $this->maxLength - $prefixLength)
                 )
         );
     }

@@ -5,7 +5,7 @@ namespace App\DataFixtures;
 use App\Entity\Car;
 use App\Service\LatitudeGenerator;
 use App\Service\LongitudeGenerator;
-use App\Service\RegistrationNumberGenerator;
+use App\Service\RegistrationGenerator;
 use App\Service\VinGenerator;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -13,10 +13,10 @@ use Random\RandomException;
 
 final class CarFixtures extends Fixture
 {   public function __construct(
-        private readonly VinGenerator $vinGenerator,
-        private readonly RegistrationNumberGenerator $registrationNumberGenerator,
-        private readonly LatitudeGenerator $latitudeGenerator,
-        private readonly LongitudeGenerator $longitudeGenerator
+        private readonly VinGenerator          $vinGenerator,
+        private readonly RegistrationGenerator $registrationGenerator,
+        private readonly LatitudeGenerator     $latitudeGenerator,
+        private readonly LongitudeGenerator    $longitudeGenerator
     ) {
     }
 
@@ -38,7 +38,7 @@ final class CarFixtures extends Fixture
     {
         $car = new Car;
         $car->setBrand('Audi');
-        $car->setRegistrationNumber($this->registrationNumberGenerator->generate());
+        $car->setRegistration($this->registrationGenerator->generate());
         $car->setVin($this->vinGenerator->generate());
         $car->setRented((bool) random_int(0, 1));
         $car->setLatitude($this->latitudeGenerator->generate());

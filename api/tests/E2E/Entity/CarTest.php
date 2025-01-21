@@ -56,12 +56,12 @@ class CarTest extends ApiTestCase
     /**
      * @dataProvider validCarProvider
      */
-    public function testShouldCreateACar(int $expectedId, string $brand, string $registrationNumber, string $vin, bool $rented, string | null $customerEmail, string | null $customerAddress): void
+    public function testShouldCreateACar(int $expectedId, string $brand, string $registration, string $vin, bool $rented, string | null $customerEmail, string | null $customerAddress): void
     {
         // given
         $car = (object) [
             'brand' => $brand,
-            'registrationNumber' => $registrationNumber,
+            'registration' => $registration,
             'vin' => $vin,
             'rented' => $rented,
             'customerEmail' => $customerEmail,
@@ -109,12 +109,12 @@ class CarTest extends ApiTestCase
     /**
      * @dataProvider invalidCarProvider
      */
-    public function testShouldNotCreateACar(int $expectedId, string $brand, string $registrationNumber, string $vin, bool $rented, string | null $customerEmail, string | null $customerAddress, string $expectedMessage): void
+    public function testShouldNotCreateACar(int $expectedId, string $brand, string $registration, string $vin, bool $rented, string | null $customerEmail, string | null $customerAddress, string $expectedMessage): void
     {
         // given
         $car = (object) [
             'brand' => $brand,
-            'registrationNumber' => $registrationNumber,
+            'registration' => $registration,
             'vin' => $vin,
             'rented' => $rented,
             'customerEmail' => $customerEmail,
@@ -142,12 +142,12 @@ class CarTest extends ApiTestCase
     /**
      * @dataProvider validCarUpdateProvider
      */
-    public function testShouldUpdateTheCar(string $brand, string $registrationNumber, string $vin, bool $rented, string | null $customerEmail, string | null $customerAddress): void
+    public function testShouldUpdateTheCar(string $brand, string $registration, string $vin, bool $rented, string | null $customerEmail, string | null $customerAddress): void
     {
         // given
         $car = new Car;
         $car->setBrand('BMW');
-        $car->setRegistrationNumber('GS123456');
+        $car->setRegistration('GS123456');
         $car->setVin('VF1KZ1A054Y123456');
         $car->setRented(false);
 
@@ -160,7 +160,7 @@ class CarTest extends ApiTestCase
 
         $carDataToPersist = (object) [
             'brand' => $brand,
-            'registrationNumber' => $registrationNumber,
+            'registration' => $registration,
             'vin' => $vin,
             'rented' => $rented,
             'customerEmail' => $customerEmail,
@@ -180,7 +180,7 @@ class CarTest extends ApiTestCase
         $this->assertResponseHeaderSame('Content-Type','application/json; charset=utf-8');
         $this->assertMatchesResourceItemJsonSchema(Car::class);
         $this->assertSame($deserializedResponse['brand'], $carAfterUpdate->getBrand());
-        $this->assertSame($deserializedResponse['registrationNumber'], $carAfterUpdate->getRegistrationNumber());
+        $this->assertSame($deserializedResponse['registration'], $carAfterUpdate->getRegistrationNumber());
         $this->assertSame($deserializedResponse['vin'], $carAfterUpdate->getVin());
         $this->assertSame($deserializedResponse['rented'], $carAfterUpdate->isRented());
         $this->assertSame($deserializedResponse['customerEmail'], $carAfterUpdate->getCustomerEmail());
@@ -197,7 +197,7 @@ class CarTest extends ApiTestCase
         // given
         $car = new Car;
         $car->setBrand('BMW');
-        $car->setRegistrationNumber('GS123456');
+        $car->setRegistration('GS123456');
         $car->setVin('VF1KZ1A054Y123456');
         $car->setRented(false);
 

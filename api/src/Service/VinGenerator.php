@@ -8,13 +8,11 @@ use Random\RandomException;
 
 class VinGenerator
 {
-    public const LENGTH = 17;
-
     /**
      * @throws RandomException
      */
     public function generate(): string
     {
-        return mb_strtoupper(chr(random_int(65, 90)) . mb_substr(md5(random_bytes(1024)), 0, self::LENGTH - 1));
+        return mb_strtoupper(chr(random_int(65, 90)) . mb_substr(md5(random_bytes(1024)), 0, 16));
     }
 }
