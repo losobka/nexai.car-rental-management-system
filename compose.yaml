@@ -9,6 +9,8 @@ services:
             - "3306:3306"
         volumes:
             - ./docker/database:/var/lib/mysql:rw
+        labels:
+            com.symfony.server.service-ignore: true
 
     php-fpm:
         build:
