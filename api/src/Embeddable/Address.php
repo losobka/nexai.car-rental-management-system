@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Embeddable;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Embeddable]
-class Address
+final class Address
 {
     #[ORM\Column(nullable: true)]
     private ?string $street;
@@ -16,16 +19,17 @@ class Address
     #[ORM\Column(nullable: true)]
     private ?string $city;
 
+    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:update:read'])]
     public function getStreet(): ?string
     {
         return $this->street;
     }
-
+    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:update:read'])]
     public function getPostalCode(): ?string
     {
         return $this->postalCode;
     }
-
+    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:update:read'])]
     public function getCity(): ?string
     {
         return $this->city;
@@ -33,7 +37,7 @@ class Address
 
     public function setCity(?string $city): void
     {
-        if (0 === mb_strlen($city))
+        if (0 === mb_strlen((string) $city))
             $city = null;
 
         $this->city = $city;
@@ -41,7 +45,7 @@ class Address
 
     public function setPostalCode(?string $postalCode): void
     {
-        if (0 === mb_strlen($postalCode))
+        if (0 === mb_strlen((string) $postalCode))
             $postalCode = null;
 
         $this->postalCode = $postalCode;
@@ -49,7 +53,7 @@ class Address
 
     public function setStreet(?string $street): void
     {
-        if (0 === mb_strlen($street))
+        if (0 === mb_strlen((string) $street))
             $street = null;
 
         $this->street = $street;
