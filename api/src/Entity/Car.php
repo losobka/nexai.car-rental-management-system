@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiProperty;
@@ -7,81 +9,79 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
+use App\Dto\RecordedGeolocation as CarUpdateCurrentPositionDto;
+use App\Embeddable\Address;
+use App\Embeddable\RecordedGeolocation;
+use App\Enum\CarBrand;
 use App\Repository\CarRepository;
+use App\State\CarCurrentPositionStateProcessor;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: CarRepository::class)]
 #[ApiResource(
     operations: [
-        new Get(),
-        new GetCollection(),
-        new Post(),
-        new Put(),
-        new Delete()
-    ]
+        new Get(normalizationContext: ['groups' => ['car:item:read']]),
+        new GetCollection(
+            normalizationContext: ['groups' => ['car:collection:read']]
+        ),
+        new Post(
+            normalizationContext: ['groups' => ['car:create:read']],
+            denormalizationContext: ['groups' => ['car:create:write']]
+        ),
+        new Post(
+            uriTemplate: '/cars/{id}/positions',
+            status: 204,
+            denormalizationContext: ['groups' => ['car:current_position:write']],
+            input: CarUpdateCurrentPositionDto::class,
+            name: 'api_cars_id_post_positions',
+            processor: CarCurrentPositionStateProcessor::class
+        ),
+        new Patch(
+            normalizationContext: ['groups' => ['car:update:read']],
+            denormalizationContext: ['groups' => ['car:update:write']]
+        ),
+        new Delete
+    ],
 )]
-class Car
+#[UniqueEntity(fields: ['vin'])]
+final class Car
 {
-    public const AVAILABLE_BRANDS = [
-        'Audi',
-        'BMW',
-        'Chevrolet',
-        'Ferrari',
-        'Ford',
-        'Honda',
-        'Hyundai',
-        'Jeep',
-        'Kia',
-        'Lamborghini',
-        'Lexus',
-        'Mazda',
-        'Mercedes-Benz',
-        'Nissan',
-        'Porsche',
-        'Subaru',
-        'Tesla',
-        'Toyota',
-        'Volkswagen',
-        'Volvo'
-    ];
-
     public const REGISTRATION_REGEX = '@^[A-Z]{1}[A-Z\d]{2,11}$@';
     public const VIN_REGEX = '@^[A-Z]{1}[A-Z\d]{16}$@';
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[ApiProperty(
-        identifier: false,
-        openapiContext: [
-            'example' => 1
-        ]
-    )]
+    #[ApiProperty(identifier: true)]
+    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:update:read'])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 64)]
-    #[Assert\Choice(choices: self::AVAILABLE_BRANDS)]
-    private string $brand = '';
+    #[ORM\Column(type: 'string', enumType: CarBrand::class)]
+    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read', 'car:update:write'])]
+    private ?CarBrand $brand;
 
     #[ORM\Column(length: 12, unique: true)]
     #[Assert\Regex(pattern: self::REGISTRATION_REGEX, message: 'Invalid registration')]
     #[ApiProperty(openapiContext: [
         'example' => 'ZK3666'
     ])]
+    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read', 'car:update:write'])]
     private string $registration = '';
 
     #[ORM\Column(length: 17, unique: true)]
     #[Assert\Regex(pattern: self::VIN_REGEX, message: 'Invalid VIN')]
     #[ApiProperty(
-        identifier: true,
         openapiContext: [
             'example' => 'K9ITO0C2W2BR1N12M'
         ]
     )]
+    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read'])]
     private string $vin = '';
 
     #[ORM\Column]
@@ -94,34 +94,30 @@ class Car
     ])]
     private ?string $customerEmail = null;
 
-    #[ORM\Column(length: 64, nullable: true)]
-    #[ApiProperty(openapiContext: [
-        'description' => 'Please type only when the car is rented',
-        'example' => 'ul. Kwiatowa 1/10B, 03-528 Warszawa'
-    ])]
-    private ?string $customerAddress = null;
+    #[ORM\Embedded(class: Address::class, columnPrefix: 'billing_')]
+    #[ApiProperty]
+    private Address $billingAddress;
 
-    #[ORM\Column]
-    #[ApiProperty(readable: true, writable: false)]
-    #[Assert\Range(min: -90, max: 90)]
-    private float $latitude = 0;
+    #[ORM\Embedded(class: RecordedGeolocation::class)]
+    private RecordedGeolocation $currentPosition;
 
-    #[ORM\Column]
-    #[ApiProperty(readable: true, writable: false)]
-    #[Assert\Range(min: -180, max: 180)]
-    private float $longitude = 0;
+    public function __construct()
+    {
+        $this->billingAddress = new Address;
+        $this->currentPosition = new RecordedGeolocation;
+    }
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getBrand(): string
+    public function getBrand(): CarBrand
     {
         return $this->brand;
     }
 
-    public function setBrand(string $brand): static
+    public function setBrand(CarBrand $brand): static
     {
         $this->brand = $brand;
 
@@ -176,95 +172,42 @@ class Car
         return $this;
     }
 
-    public function getCustomerAddress(): ?string
+    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read', 'car:update:write'])]
+    public function getBillingAddress(): ?Address
     {
-        return $this->customerAddress;
+        if (
+            empty($this->billingAddress->getStreet())
+                || empty($this->billingAddress->getStreet())
+                || empty($this->billingAddress->getPostalCode())
+        )
+                return null;
+
+        if (false === $this->isRented())
+            return null;
+
+        return $this->billingAddress;
     }
 
-    public function setCustomerAddress(?string $customerAddress): static
+    public function setBillingAddress(Address $billingAddress): void
     {
-        $this->customerAddress = $customerAddress;
+        $this->billingAddress = $billingAddress;
+    }
+    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:update:current_position:write', 'car:update:read'])]
+    public function getCurrentPosition(): ?RecordedGeolocation
+    {
+        if (
+            null === $this->currentPosition->latitude
+                || null === $this->currentPosition->longitude
+        )
+            return null;
+
+        return $this->currentPosition;
+    }
+
+    public function setCurrentPosition(RecordedGeolocation $currentPosition): static
+    {
+        $this->currentPosition = $currentPosition;
 
         return $this;
-    }
-
-    public function getLatitude(): float
-    {
-        return round($this->latitude, 5);
-    }
-
-    public function setLatitude(float $latitude): static
-    {
-        $this->latitude = $latitude;
-
-        return $this;
-    }
-
-    public function getLongitude(): float
-    {
-        return round($this->longitude, 5);
-    }
-
-    public function setLongitude(float $longitude): static
-    {
-        $this->longitude = $longitude;
-
-        return $this;
-    }
-
-    #[Assert\Callback]
-    public function validateIfCustomerEmailIsEmptyWhenCarIsNotRented(ExecutionContextInterface $context, mixed $payload): void
-    {
-        if ($this->isRented() || empty($this->getCustomerEmail()))
-            return;
-
-        $context->buildViolation('Customer email address should be empty')
-            ->atPath('customerEmail')
-            ->addViolation();
-    }
-
-    #[Assert\Callback]
-    public function validateIfCustomerAddressIsEmptyWhenCarIsNotRented(ExecutionContextInterface $context, mixed  $payload): void
-    {
-        if ($this->isRented() || empty($this->getCustomerAddress()))
-            return;
-
-        $context->buildViolation('Customer address should be empty')
-            ->atPath('customerAddress')
-            ->addViolation();
-    }
-
-    #[Assert\Callback]
-    public function validateIfCustomerEmailIsProvidedWhenCarIsRented(ExecutionContextInterface $context, mixed  $payload): void
-    {
-        if (false === $this->isRented() || false === empty($this->getCustomerEmail()))
-            return;
-
-        $context->buildViolation('Customer email address is required')
-            ->atPath('customerEmail')
-            ->addViolation();
-    }
-
-    #[Assert\Callback]
-    public function validateIfCustomerAddressIsProvidedWhenCarIsRented(ExecutionContextInterface $context, mixed $payload): void
-    {
-        if (false === $this->isRented() || false === empty($this->getCustomerAddress()))
-            return;
-
-        $context->buildViolation('Customer address is required')
-            ->atPath('customerAddress')
-            ->addViolation();
-    }
-
-    #[Assert\Callback]
-    public function validateCustomerAddress(ExecutionContextInterface $context, mixed $payload): void
-    {
-        if (null === $this->getCustomerAddress())
-            return;
-
-        if (false === preg_match(pattern: '@^ul\. [:alnum]{3,32}, \d{2}-\d{4} [:alnum]{3,18}$@u', subject: $this->getCustomerAddress()))
-            $context->buildViolation('Invalid customer address format')
-                ->atPath('customerAddress')
-                ->addViolation();
     }
 }

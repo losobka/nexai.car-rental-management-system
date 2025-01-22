@@ -2,7 +2,9 @@
 
 namespace App\DataFixtures;
 
+use App\Embeddable\RecordedGeolocation;
 use App\Entity\Car;
+use App\Enum\CarBrand;
 use App\Service\LatitudeGenerator;
 use App\Service\LongitudeGenerator;
 use App\Service\RegistrationGenerator;
@@ -37,12 +39,17 @@ final class CarFixtures extends Fixture
     public function create(): Car
     {
         $car = new Car;
-        $car->setBrand('Audi');
+        $car->setBrand(CarBrand::from('Audi'));
         $car->setRegistration($this->registrationGenerator->generate());
         $car->setVin($this->vinGenerator->generate());
         $car->setRented((bool) random_int(0, 1));
-        $car->setLatitude($this->latitudeGenerator->generate());
-        $car->setLongitude($this->longitudeGenerator->generate());
+
+        if (true === (bool) random_int(0, 1)) {
+            $car->setCurrentPosition(new RecordedGeolocation(
+                $this->latitudeGenerator->generate(),
+                $this->longitudeGenerator->generate()
+            ));
+        }
 
         if ($car->isRented()) {
 //                $car->setCustomerEmail($this->faker->email());
