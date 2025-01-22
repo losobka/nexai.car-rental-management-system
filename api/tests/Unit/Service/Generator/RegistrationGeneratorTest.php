@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Unit\Service;
+namespace App\Tests\Unit\Service\Generator;
 
 use App\Service\RegistrationGenerator;
 use OutOfBoundsException;

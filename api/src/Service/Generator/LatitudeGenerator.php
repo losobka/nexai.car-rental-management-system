@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Service;
+declare(strict_types=1);
+
+namespace App\Service\Generator;
 
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
