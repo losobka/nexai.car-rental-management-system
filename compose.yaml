@@ -32,10 +32,9 @@ services:
     nginx:
         image: nginx:1.27-alpine
         restart: unless-stopped
+        # to refresh IP address of php-fpm
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
-        depends_on:
-            - php-fpm
+            test: ["CMD", "sh", "-c", "'[ ",  "$(curl", "-o", "/dev/null", "-I", "-L", "-s", "-w", "%{http_code}", "http://localhost:8000/docs)", "-eq", "200", "]'"]
         ports:
             - "8000:80"
         volumes:
