@@ -7,25 +7,26 @@
     <md-list ng-if="!loading && !loadingError">
         <md-list-item class="md-3-line" ng-repeat="car in cars">
             <div class="md-list-item-text">
-                <a href="#!/cars/{{car.id}}">
-                    <h3>{{ car.brand }} | {{car.registration}}</h3>
-                    <p>{{car.vin}}</p>
-                </a>
-                <p>{{item.vin}}</p>
+                <h2>{{car.brand}} ({{car.registration}})</h2>
+                    <p>VIN: <strong>{{car.vin}}</strong></p>
+                    <p>Is rented?: <strong>{{car.isRented}}</strong></p>
+                    <p>Rentals count: <strong>{{car.rentals.length}}</strong></p>
+                    <p ng-if="!!car.latestRental">Customer billing address: <strong>
+                        <customer-address
+                            city="{{car.latestRental.billingAddress.city}}"
+                            street="{{car.latestRental.billingAddress.street}}"
+                            postal-code="{{car.latestRental.billingAddress.postalCode}}"
+                        >
+                        </customer-address>
+                    </strong></p>
+                    <p ng-if="!!car.currentPosition">Current position: <strong><location latitude="{{car.currentPosition.latitude}}" longitude="{{car.currentPosition.longitude}}"></strong></p>
             </div>
-            <div class="md-list-item-text">
-                <address ng-if="car.latestRental" city="{{car.latestRental.billingAddress.city}}"
-                         street="{{car.latestRental.billingAddress.street}}"
-                         postal-code="{{car.latestRental.billingAddress.postalCode}}">
-
-                </address>
-            </div>
-
-            <md-button disabled ng-show="car.isRented"  ng-click="rentt(car.id)">Rent</md-button>
-            <md-button disabled ng-show="!car.isRented"  ng-click="finishRental(car.id)">Finish rental</md-button>
+            <md-button disabled ng-show="!car.isRented"  ng-click="rentt(car.id)">Rent</md-button>
+            <md-button disabled ng-show="car.isRented"  ng-click="finishRental(car.id)">Finish rental</md-button>
             <md-button ng-click="edit(car.id)">Edit</md-button>
             <md-button class="md-warn" ng-click="remove(car.id)">Remove</md-button>
             <md-divider ng-if="!$last"></md-divider>
+
         </md-list-item>
     </md-list>
 </md-content>

@@ -45,7 +45,7 @@ angular
             }
         ]
     })
-    .directive('address', function () {
+    .directive('customerAddress', function () {
         return {
             restrict: 'E',
             scope: {
@@ -54,6 +54,16 @@ angular
                 city: '@'
             },
             template: `{{street}}, {{postalCode}} {{city}}`
+        };
+    })
+    .directive('location', function () {
+        return {
+            restrict: 'E',
+            scope: {
+                latitude: '@',
+                longitude: '@'
+            },
+            template: `{{latitude}}, {{longitude}}`
         };
     })
 ;
