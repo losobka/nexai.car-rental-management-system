@@ -1,0 +1,39 @@
+<div layout="column" ng-cloak>
+    <md-content layout-padding>
+        <h2>Edit the car</h2>
+        <form ng-submit="editCar(car.id)">
+            <md-input-container class="md-block">
+                <label>ID</label>
+                <input readonly disabled name="id" ng-model="car.id">
+            </md-input-container>
+
+            <md-input-container class="md-block">
+                <label>Brnad</label>
+                <md-select ng-model="car.brand">
+                    <md-option ng-repeat="brand in brands">
+                        {{brand}}
+                    </md-option>
+                </md-select>
+            </md-input-container>
+
+            <md-input-container class="md-block">
+                <label>VIN</label>
+                <input md-minLength="17" md-maxlength="17" readonly disabled name="vin" ng-model="car.vin">
+                <div ng-if="violations.hasOwnProperty('vin')" ng-messages="violations.vin">
+                    <div ng-message-default ng-repeat="violation in violations.vin">{{violation}}</div>
+                </div>
+            </md-input-container>
+
+
+            <md-input-container class="md-block">
+                <label>Registration</label>
+                <input md-minLength="3" md-maxlength="12" required name="registration" ng-model="car.registration">
+                <div ng-if="violations.hasOwnProperty('registration')" ng-messages="violations.registration">
+                    <div ng-message-default ng-repeat="violation in violations.registration">{{violation}}</div>
+                </div>
+            </md-input-container>
+
+            <md-button class="md-raised md-primary" type="submit">Save</md-button>
+        </form>
+    </md-content>
+</div>

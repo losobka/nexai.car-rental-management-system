@@ -48,12 +48,15 @@ RUN apk add --no-cache --virtual mysql-clien; \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
+VOLUME [ "/app" ]
+
 
 COPY --link composer.* .
 COPY --link *.lock .
 
 RUN composer install --no-progress --no-interaction --dev --no-scripts
 
-COPY --link . .
+COPY --link --chown=root:root . ./
+
 
 EXPOSE 9000

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" ng-app="carRentalApp">
+  <head>
+    <meta charset="utf-8">
+    <title>NEXAI's car rental management system</title>
+
+    <link rel="stylesheet" href="lib/angular-material/angular-material.css" />
+
+    <script src="lib/angular/angular.js"></script>
+    <script src="lib/angular-resource/angular-resource.js"></script>
+    <script src="lib/angular-route/angular-route.js"></script>
+    <script src="lib/angular-material/angular-material.js"></script>
+    <script src="lib/angular-animate/angular-animate.js"></script>
+    <script src="lib/angular-aria/angular-aria.js"></script>
+    <script src="app.module.js"></script>
+    <script src="app.config.js"></script>
+    <script src="core/core.module.js"></script>
+    <script src="core/car/car.module.js"></script>
+    <script src="core/car/car.service.js"></script>
+    <script src="car-list/car-list.module.js"></script>
+    <script src="car-list/car-list.component.js"></script>
+    <script src="car-add/car-add.module.js"></script>
+    <script src="car-add/car-add.component.js"></script>
+    <script src="car-edit/car-edit.module.js"></script>
+    <script src="car-edit/car-edit.component.js"></script>
+  </head>
+  <body>
+    <md-toolbar class="md-theme-light">
+      <h2 class="md-toolbar-tools">
+        <span>NEXAI's car rental management system</span>
+      </h2>
+      <md-button class="md-raised md-secondary md-hue-3" aria-label="Add a car" ng-href="#!/cars/add">
+        Add a car
+      </md-button>
+    </md-toolbar>
+
+    <div class="view-container">
+      <div ng-view></div>
+    </div>
+  </body>
+</html>
