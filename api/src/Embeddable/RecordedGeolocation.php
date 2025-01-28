@@ -13,7 +13,7 @@ use Symfony\Component\Serializer\Attribute\Groups;
 final class RecordedGeolocation extends Geolocation
 {
     #[ORM\Column(type: 'datetime', nullable: true)]
-    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:update:current_position:write', 'car:update:read'])]
+    #[Groups(['car:item:read', 'car:collection:read', 'car:update:current_position:read', 'car:update:current_position:write', 'car:update:read'])]
     public ?DateTimeInterface $recordedAt;
 
     public function __construct(?float $latitude = null, ?float $longitude = null)

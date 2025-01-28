@@ -11,17 +11,19 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\OpenApi\Model\Operation;
 use App\Dto\RecordedGeolocation as CarUpdateCurrentPositionDto;
-use App\Embeddable\Address;
 use App\Embeddable\RecordedGeolocation;
 use App\Enum\CarBrand;
 use App\Repository\CarRepository;
 use App\State\CarCurrentPositionStateProcessor;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: CarRepository::class)]
 #[ApiResource(
@@ -32,12 +34,16 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
         ),
         new Post(
             normalizationContext: ['groups' => ['car:create:read']],
-            denormalizationContext: ['groups' => ['car:create:write']]
+            denormalizationContext: ['groups' => ['car:create:write']],
         ),
         new Post(
             uriTemplate: '/cars/{id}/positions',
-            status: 204,
-            denormalizationContext: ['groups' => ['car:current_position:write']],
+            openapi: new Operation(
+                summary: 'Creates CarRecordedGeolocation resource and updates Car\'s currentPosition property',
+                description: 'Creates CarRecordedGeolocation resource and updates Car\'s currentPosition property'
+            ),
+            normalizationContext: ['groups' => ['car:update:current_position:read'], AbstractObjectNormalizer::PRESERVE_EMPTY_OBJECTS => false],
+            denormalizationContext: ['groups' => ['car:update:current_position:write']],
             input: CarUpdateCurrentPositionDto::class,
             name: 'api_cars_id_post_positions',
             processor: CarCurrentPositionStateProcessor::class
@@ -50,7 +56,7 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
     ],
 )]
 #[UniqueEntity(fields: ['vin'])]
-final class Car
+class Car
 {
     public const REGISTRATION_REGEX = '@^[A-Z]{1}[A-Z\d]{2,11}$@';
     public const VIN_REGEX = '@^[A-Z]{1}[A-Z\d]{16}$@';
@@ -59,52 +65,44 @@ final class Car
     #[ORM\GeneratedValue]
     #[ORM\Column]
     #[ApiProperty(identifier: true)]
-    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:update:read'])]
+    #[Groups(['car:item:read', 'car:collection:read', 'car:create:read', 'car:update:read', 'rental:item:read', 'rental:collection:read', 'rental:update:read', 'rental:create:read'])]
     private ?int $id = null;
 
     #[ORM\Column(type: 'string', enumType: CarBrand::class)]
-    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read', 'car:update:write'])]
+    #[Groups(['car:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read', 'car:update:write', 'rental:item:read', 'rental:collection:read', 'rental:update:read', 'rental:create:read'])]
     private ?CarBrand $brand;
 
     #[ORM\Column(length: 12, unique: true)]
     #[Assert\Regex(pattern: self::REGISTRATION_REGEX, message: 'Invalid registration')]
+    #[Assert\Length(min: 3, max: 12)]
     #[ApiProperty(openapiContext: [
         'example' => 'ZK3666'
     ])]
-    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read', 'car:update:write'])]
+    #[Groups(['car:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read', 'car:update:write', 'rental:item:read', 'rental:collection:read', 'rental:update:read', 'rental:create:read'])]
     private string $registration = '';
 
     #[ORM\Column(length: 17, unique: true)]
     #[Assert\Regex(pattern: self::VIN_REGEX, message: 'Invalid VIN')]
+    #[Assert\Length(exactly: 17)]
     #[ApiProperty(
         openapiContext: [
             'example' => 'K9ITO0C2W2BR1N12M'
         ]
     )]
-    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read'])]
+    #[Groups(['car:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read', 'rental:item:read', 'rental:collection:read', 'rental:update:read', 'rental:create:read'])]
     private string $vin = '';
 
-    #[ORM\Column]
-    private bool $rented = false;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Assert\Email]
-    #[ApiProperty(openapiContext: [
-        'description' => 'Please type only when the car is rented'
-    ])]
-    private ?string $customerEmail = null;
-
-    #[ORM\Embedded(class: Address::class, columnPrefix: 'billing_')]
-    #[ApiProperty]
-    private Address $billingAddress;
-
     #[ORM\Embedded(class: RecordedGeolocation::class)]
-    private RecordedGeolocation $currentPosition;
+    private ?RecordedGeolocation $currentPosition;
+
+    #[Groups(['car:item:read', 'car:collection:read'])]
+    #[ORM\OneToMany(targetEntity: Rental::class, mappedBy: 'car', cascade: ['persist'], orphanRemoval: true)]
+    private Collection $rentals;
 
     public function __construct()
     {
-        $this->billingAddress = new Address;
         $this->currentPosition = new RecordedGeolocation;
+        $this->rentals = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -148,51 +146,8 @@ final class Car
         return $this;
     }
 
-    public function isRented(): bool
-    {
-        return $this->rented;
-    }
-
-    public function setRented(bool $isRented): static
-    {
-        $this->rented = $isRented;
-
-        return $this;
-    }
-
-    public function getCustomerEmail(): ?string
-    {
-        return $this->customerEmail;
-    }
-
-    public function setCustomerEmail(?string $customerEmail): static
-    {
-        $this->customerEmail = $customerEmail;
-
-        return $this;
-    }
-
-    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read', 'car:update:write'])]
-    public function getBillingAddress(): ?Address
-    {
-        if (
-            empty($this->billingAddress->getStreet())
-                || empty($this->billingAddress->getStreet())
-                || empty($this->billingAddress->getPostalCode())
-        )
-                return null;
-
-        if (false === $this->isRented())
-            return null;
-
-        return $this->billingAddress;
-    }
-
-    public function setBillingAddress(Address $billingAddress): void
-    {
-        $this->billingAddress = $billingAddress;
-    }
-    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:update:current_position:write', 'car:update:read'])]
+    #[Groups(['car:item:read', 'car:collection:read', 'car:update:current_position:read', 'car:update:current_position:write', 'car:update:read'])]
+//    #[ApiProperty]
     public function getCurrentPosition(): ?RecordedGeolocation
     {
         if (
@@ -209,5 +164,52 @@ final class Car
         $this->currentPosition = $currentPosition;
 
         return $this;
+    }
+
+    /**
+     * @return Collection<int, Rental>
+     */
+    public function getRentals(): Collection
+    {
+        return $this->rentals;
+    }
+
+    public function addRental(Rental $rental): static
+    {
+        if (!$this->rentals->contains($rental)) {
+            $this->rentals->add($rental);
+            $rental->setCar($this);
+        }
+
+        return $this;
+    }
+
+    public function removeRental(Rental $rental): static
+    {
+        if ($this->rentals->removeElement($rental)) {
+            // set the owning side to null (unless already changed)
+            if ($rental->getCar() === $this) {
+                $rental->setCar(null);
+            }
+        }
+
+        return $this;
+    }
+
+    #[Groups(['car:item:read', 'car:collection:read'])]
+    public function getIsRented(): bool
+    {
+        return null !== $this->getLatestRental();
+    }
+
+    #[Groups(['car:item:read', 'car:collection:read'])]
+    public function getLatestRental(): ?Rental
+    {
+        $latestRental = $this->rentals->last();
+
+        if (false === $latestRental)
+            return null;
+
+        return $latestRental;
     }
 }
