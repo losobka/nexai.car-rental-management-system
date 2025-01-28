@@ -8,17 +8,21 @@ use Symfony\Component\Serializer\Attribute\Groups;
 
 class RecordedGeolocation extends Geolocation
 {
-    #[Groups(['car:current_position:write'])]
+    #[Groups(['car:update:current_position:write', 'car:update:current_position:read'])]
     public readonly DateTimeInterface $recordedAt;
 
     public function __construct(
         float $longitude,
         float $latitude,
-        string $recordedAt = 'NOW'
+        ?DateTimeInterface $recordedAt = null
     ) {
         parent::__construct($longitude, $latitude);
 
-        $this->recordedAt = new DateTime($recordedAt);
+        if (null === $recordedAt) {
+            $recordedAt = new DateTime();
+        }
+
+        $this->recordedAt = $recordedAt;
     }
 
     public function getRecordedAt(): DateTimeInterface

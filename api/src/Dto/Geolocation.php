@@ -7,9 +7,9 @@ use Symfony\Component\Serializer\Attribute\Groups;
 class Geolocation
 {
     public function __construct(
-        #[Groups(['car:current_position:write'])]
+        #[Groups(['car:update:current_position:write', 'car:update:current_position:read'])]
         public readonly float $latitude,
-        #[Groups(['car:current_position:write'])]
+        #[Groups(['car:update:current_position:write', 'car:update:current_position:read'])]
         public readonly float $longitude
     ) {
     }
