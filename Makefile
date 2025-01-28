@@ -1,10 +1,13 @@
 .PHONY: start
 start:
 	make stop
+	docker compose build
 	docker compose up --remove-orphans --timestamps
 
 .PHONY: stop
 stop:
+	docker compose exec php-fpm rm -Rf vendor || exit 0
+	docker compose rm -v -s -f
 	docker compose down --remove-orphans
 
 .PHONY: run-api-e2e-tests
@@ -22,12 +25,10 @@ open:
 
 .PHONY: open-app
 open-app:
-	make start
 	open http://localhost:8000 || xdg-open http://localhost:8000 || gnome-open http://localhost:8000
 
 .PHONY: open-docs
 open-docs:
-	make start
 	open http://localhost:8000/docs || xdg-open http://localhost:8000/docs || gnome-open http://localhost:8000/docs
 
 .PHONY: logs
