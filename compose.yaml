@@ -32,6 +32,8 @@ services:
     nginx:
         image: nginx:1.27-alpine
         restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
         depends_on:
             - php-fpm
         ports:
