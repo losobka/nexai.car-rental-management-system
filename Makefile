@@ -2,7 +2,8 @@
 start:
 	make stop
 	docker compose build
-	docker compose up --remove-orphans --timestamps
+	docker compose up --remove-orphans --timestamps > /dev/stdout
+	docker compose exec nginx sh -c "chown root:root /app -R"
 
 .PHONY: stop
 stop:
