@@ -17,6 +17,7 @@ class OpenApiFactory implements OpenApiFactoryInterface
 
     public function __invoke(array $context = []): OpenApi
     {
+        $openApi = $this->decorated->__invoke($context);
         $openApi = $openApi->withServers([new Model\Server('http://localhost:8000')]);
 
         return $openApi;
