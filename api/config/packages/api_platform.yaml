@@ -1,15 +1,17 @@
 api_platform:
     title: Car rental managment system
-    description: stworzone na potrzeby udziałi w rekrutacji do firmy NEXAI
+    description: stworzone na potrzeby udziału w rekrutacji do firmy NEXAI
     version: 1.0.0
     defaults:
         stateless: true
         cache_headers:
             vary: ['Content-Type', 'Authorization', 'Origin']
         formats:
-            json
+            json: ['application/json']
         pagination_enabled: false
         pagination_via_cursor_enabled: false
+    error_formats:
+        jsonproblem: ['application/problem+json']
     swagger:
         versions: [3]
     openapi:
