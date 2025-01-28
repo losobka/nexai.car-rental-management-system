@@ -1,0 +1,85 @@
+<div layout="column" ng-cloak>
+    <md-content layout-padding>
+        <h2>Add a car</h2>
+        <form ng-submit="addCar(car)">
+            <md-input-container class="md-block">
+                <label>Brnad</label>
+                <md-select required ng-model="car.brand" placeholder="{{car.brand || 'Click here to select'}}">
+                    <md-option ng-repeat="brand in brands">
+                        {{brand}}
+                    </md-option>
+                </md-select>
+            </md-input-container>
+
+            <md-input-container class="md-block">
+                <label>VIN</label>
+                <input minLength="17" md-maxlength="17" pattern="^[A-Z]{1}[A-Z\d]{16}$" title="^[A-Z]{1}[A-Z\d]{16}$" name="vin" ng-model="car.vin">
+                <div ng-if="violations.hasOwnProperty('vin')" ng-messages="violations.vin">
+                    <div ng-message-default ng-repeat="violation in violations.vin">{{violation}}</div>
+                </div>
+            </md-input-container>
+
+            <md-input-container class="md-block">
+                <label>Registration</label>
+                <input minLength="3" md-maxlength="12" required pattern="^[A-Z\d]{3,12}$" title="[A-Z]{1}[A-Z\d]{16}" name="registration" ng-model="car.registration">
+                <div ng-if="violations.hasOwnProperty('registration')" ng-messages="violations.registration">
+                    <div ng-message-default ng-repeat="violation in violations.registration">{{violation}}</div>
+                </div>
+            </md-input-container>
+
+            <md-switch ng-model="car.isRented" aria-label="Is rented?" ng-true-value="true" ng-false-value="false" class="md-warn">
+                Is rented?
+            </md-switch>
+
+            <md-input-container class="md-block" ng-if="car.isRented">
+                <label>Customer e-mail</label>
+                <input type="email" name="customerEmail" required  ng-model="rental.customerEmail">
+                <div ng-if="violations.hasOwnProperty('customerEmail')" ng-messages="violations.customerEmail">
+                    <div ng-message-default ng-repeat="violation in violations.customerEmail">{{violation}}</div>
+                </div>
+            </md-input-container>
+
+            <md-input-container class="md-block" ng-if="car.isRented">
+                <label>Start date</label>
+                <input type="datetime-local" name="startDate" required ng-model="rental.startDate">
+                <div ng-if="violations.hasOwnProperty('startDate')" ng-messages="violations.startDate">
+                    <div ng-message-default ng-repeat="violation in violations.startDate">{{violation}}</div>
+                </div>
+            </md-input-container>
+
+            <md-input-container class="md-block" ng-if="car.isRented">
+                <label>End date</label>
+                <input type="datetime-local" name="endDate" ng-model="rental.endDate">
+                <div ng-if="violations.hasOwnProperty('endDate')" ng-messages="violations.endDate">
+                    <div ng-message-default ng-repeat="violation in violations.endDate">{{violation}}</div>
+                </div>
+            </md-input-container>
+
+            <md-input-container class="md-block" ng-if="car.isRented">
+                <label>Billing address street</label>
+                <input required name="billingAddress.street" ng-model="rental.billingAddress.street">
+                <div ng-if="violations.hasOwnProperty('billingAddress.street')" ng-messages="violations.billingAddress.street">
+                    <div ng-message-default ng-repeat="violation in violations.billingAddress.street">{{violation}}</div>
+                </div>
+            </md-input-container>
+
+            <md-input-container class="md-block" ng-if="car.isRented">
+                <label>Billing address postal code</label>
+                <input required name="billingAddress.postalCode" ng-model="rental.billingAddress.postalCode">
+                <div ng-if="violations.hasOwnProperty('billingAddress.street')" ng-messages="violations.billingAddress.postalCode">
+                    <div ng-message-default ng-repeat="violation in violations.billingAddress.postalCode">{{violation}}</div>
+                </div>
+            </md-input-container>
+
+            <md-input-container class="md-block" ng-if="car.isRented">
+                <label>Billing address city</label>
+                <input required name="billingAddress.city" ng-model="rental.billingAddress.city">
+                <div ng-if="violations.hasOwnProperty('billingAddress.city')" ng-messages="violations.billingAddress.city">
+                    <div ng-message-default ng-repeat="violation in violations.billingAddress.city">{{violation}}</div>
+                </div>
+            </md-input-container>
+
+            <md-button class="md-raised md-primary" type="submit">Add</md-button>
+        </form>
+    </md-content>
+</div>

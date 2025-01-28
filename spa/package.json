@@ -1,0 +1,27 @@
+{
+  "name": "nexai.car-rental.spa",
+  "version": "1.0.0",
+  "description": "NEXAI's car rental management system",
+  "license": "MIT",
+  "dependencies": {
+    "angular": "1.8.3",
+    "angular-animate": "^1.8.3",
+    "angular-material": "^1.2.5",
+    "angular-resource": "1.8.x",
+    "angular-route": "1.8.x"
+  },
+  "devDependencies": {
+    "cpx": "^1.5.0"
+  },
+  "scripts": {
+    "postinstall": "npm run copy-libs",
+    "copy-libs": "cpx \"node_modules/{angular,angular-*,angular-material,angular-animate}/**/*\" app/lib -C"
+  },
+  "keywords": [
+    "angularjs",
+    "spa",
+    "crud",
+    "material/web"
+  ],
+  "author": "Łukasz Osóbka"
+}

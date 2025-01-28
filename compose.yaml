@@ -23,16 +23,25 @@ services:
             - database
         restart: unless-stopped
         ports:
-            - 9000
+            - "9000"
         volumes:
             - ./docker/php-fpm:/mnt/php-fpm
             - ./docker/php-fpm/usr/local/etc/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf:ro
+            - ./api:/app
 
     nginx:
-        image: nginx:1.27
+        image: nginx:1.27-alpine
         restart: unless-stopped
         ports:
             - "8000:80"
         volumes:
             - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-            - ./api/public:/app/public:ro
+            - ./api/public:/app/api:ro
+            - ./spa/app:/app/spa:ro
+
+    spa:
+        image: node:22-alpine
+        command: npm install
+        working_dir: /app
+        volumes:
+            - ./spa:/app:rw
