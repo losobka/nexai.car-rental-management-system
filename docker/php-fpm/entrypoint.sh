@@ -2,6 +2,11 @@
 
 set -e
 
+if [ ! -d vendor ];
+then
+  composer install --no-progress --no-interaction --dev --no-scripts
+fi
+
 ATTEMPTS_LEFT_TO_REACH_DATABASE=60
 
 until [ $ATTEMPTS_LEFT_TO_REACH_DATABASE -eq 0 ] || php bin/console dbal:run-sql -q "SELECT 1" 2>&1; do
