@@ -11,30 +11,31 @@ use Symfony\Component\Serializer\Attribute\Groups;
 final class Address
 {
     #[ORM\Column(nullable: true)]
-    private ?string $street;
+    private ?string $street = null;
 
     #[ORM\Column(nullable: true)]
-    private ?string $postalCode;
+    private ?string $postalCode = null;
 
     #[ORM\Column(nullable: true)]
-    private ?string $city;
+    private ?string $city = null;
 
-    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:update:read'])]
+    #[Groups(['car:item:read', 'car:collection:read', 'car:create:read', 'car:update:read', 'rental:item:read', 'rental:collection:read', 'rental:create:read'])]
     public function getStreet(): ?string
     {
         return $this->street;
     }
-    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:update:read'])]
+    #[Groups(['car:item:read', 'car:collection:read', 'car:create:read', 'car:update:read', 'rental:item:read', 'rental:collection:read', 'rental:create:read'])]
     public function getPostalCode(): ?string
     {
         return $this->postalCode;
     }
-    #[Groups(['cat:item:read', 'car:collection:read', 'car:create:read', 'car:update:read'])]
+    #[Groups(['car:item:read', 'car:collection:read', 'car:create:read', 'car:update:read', 'rental:item:read', 'rental:collection:read', 'rental:create:read'])]
     public function getCity(): ?string
     {
         return $this->city;
     }
 
+    #[Groups(['rental:create:write'])]
     public function setCity(?string $city): void
     {
         if (0 === mb_strlen((string) $city))
@@ -43,6 +44,7 @@ final class Address
         $this->city = $city;
     }
 
+    #[Groups(['rental:create:write'])]
     public function setPostalCode(?string $postalCode): void
     {
         if (0 === mb_strlen((string) $postalCode))
@@ -51,6 +53,7 @@ final class Address
         $this->postalCode = $postalCode;
     }
 
+    #[Groups(['rental:create:write'])]
     public function setStreet(?string $street): void
     {
         if (0 === mb_strlen((string) $street))
