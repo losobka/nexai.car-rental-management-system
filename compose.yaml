@@ -32,6 +32,8 @@ services:
     nginx:
         image: nginx:1.27-alpine
         restart: unless-stopped
+        depends_on:
+            - php-fpm
         ports:
             - "8000:80"
         volumes:
