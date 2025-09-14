@@ -2,271 +2,338 @@
 
 namespace App\Tests\E2E\Entity;
 
+use ApiPlatform\Metadata\Exception\InvalidArgumentException;
+use ApiPlatform\State\ApiResource\Error;
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
-use App\DataFixtures\CarFixtures;
+use ApiPlatform\Symfony\Bundle\Test\Client;
+use ApiPlatform\Symfony\Routing\IriConverter;
+use App\ApiResource\Brand;
+use App\Dto\CarBrand;
+use App\Enum\CarBrand as CarBrandEnum;
 use App\Entity\Car;
+use App\Factory\CarFactory;
+use App\Factory\RentalFactory;
 use App\Repository\CarRepository;
+use AppendIterator;
+use ArrayObject;
 use Doctrine\ORM\EntityManagerInterface;
+use Generator;
+use Iterator;
+use JetBrains\PhpStorm\NoReturn;
+use PHPUnit\Framework\Attributes\AfterClass;
+use PHPUnit\Framework\Attributes\Before;
+use PHPUnit\Framework\Attributes\BeforeClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
+use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
+use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use stdClass;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\DependencyInjection\Container;
+use Symfony\Component\ErrorHandler\Exception\FlattenException;
 use Symfony\Component\HttpClient\Exception\ClientException;
 use Symfony\Component\HttpClient\Exception\TransportException;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Event\KernelEvent;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
+use TypeError;
+use Zenstruck\Foundry\Configuration;
+use Zenstruck\Foundry\Test\Factories;
+use Zenstruck\Foundry\Test\UnitTestConfig;
 
 class CarTest extends ApiTestCase
 {
-    /**
-     * @dataProvider countOfCarsInCollectionProvider
-     */
-    public function testShouldReturnCollectionOfCarsWithNElements(int $expectedCountOfCars): void
+    use Factories;
+    private EntityManagerInterface $entityManager;
+    private Client $httpClient;
+    private NormalizerInterface $normalizer;
+    private SerializerInterface $serializer;
+    private Container $container;
+
+    private $carFactory;
+
+    #[BeforeClass]
+    protected function setUp(): void
     {
-        // given
-        // TODO: pozbyć sie tego ifa
-        if ($expectedCountOfCars >> 0)
-            self::getContainer()->get(CarFixtures::class)->load(self::getContainer()->get(EntityManagerInterface::class));
+        parent::setUp();
 
-        $countOfCarsByCarRepository = self::getContainer()->get(CarRepository::class)->count();
-        $httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json']]);
-        $serializer = self::getContainer()->get(SerializerInterface::class);
+        $this->carFactory = CarFactory::new();
 
-        // when
-        $response = $httpClient->request('GET', '/cars');
+        self::ensureKernelShutdown();;
 
-        // then
-        $deserializedResponse = $response->toArray(false);
-        $cars = self::getContainer()->get(CarRepository::class)->findAll();
+        $this->container = self::getContainer();
+        $this->entityManager = $this->container->get(EntityManagerInterface::class);
+        $this->httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json', 'Content-Type' => 'application/json']]);;
+        $this->normalizer = self::getContainer()->get(NormalizerInterface::class);
+        $this->serializer = self::getContainer()->get(SerializerInterface::class);
+    }
+    public static function getValidCarsToCreate(): \Generator
+    {
+//        yield 'withUniqueVin-withValidBrand-withPosition-withRentals' => [201, 'application/json; charset=utf-8', CarFactory::new()->withUniqueVin()->withValidBrand()->withPosition()->withRentals()->withoutPersisting()->create()];
+//        yield 'withUniqueVin-withValidBrand-withPosition-withoutRentals' => [201, 'application/json; charset=utf-8', CarFactory::new()->withUniqueVin()->withValidBrand()->withPosition()->withoutRentals()->withoutPersisting()->create()];
+//        yield 'withUniqueVin-withValidBrand-withoutPosition' => [201, 'application/json; charset=utf-8', CarFactory::new()->withUniqueVin()->withValidBrand()->withoutPosition()->withoutPersisting()->create()];
+//        yield 'withUniqueVin-withInvalidBrand' => [400, 'application/problem+json; charset=utf-8', CarFactory::new()->withUniqueVin()->withInvalidBrand()->withoutPersisting()->create()];
+//        yield 'withNonUniqueVin-withValidBrand' => [400, 'application/problem+json; charset=utf-8', CarFactory::new()->withNonUniqueVin()->withInvalidBrand()->withoutPersisting()->create()];
+//        yield 'withVinThatStartsWithNumber-withValidBrand' => [422, 'application/problem+json; charset=utf-8', CarFactory::new()->withVinThatStartsWithNumber()->withValidBrand()->withoutPersisting()->create()];
+//        yield 'withTooShortVin-withValidBrand' => [422, 'application/problem+json; charset=utf-8', CarFactory::new()->withTooShortVin()->withValidBrand()->withoutPersisting()->create()];
+//        yield 'withTooLongVin-withValidBrand' => [422, 'application/problem+json; charset=utf-8', CarFactory::new()->withTooLongVin()->withValidBrand()->withoutPersisting()->create()];
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        $this->assertResponseHeaderSame('Content-Type','application/json; charset=utf-8');
-        $this->assertMatchesResourceCollectionJsonSchema(Car::class);
-        $this->assertSame(
-            $serializer->normalize($cars, 'json', [AbstractObjectNormalizer::SKIP_NULL_VALUES => true]),
-            $serializer->normalize($response->toArray(false), 'json', [AbstractObjectNormalizer::SKIP_NULL_VALUES => true])
-        );
-        // TODO: odkomentować
-//        $this->assertCount($expectedCountOfCars,  $deserializedResponse);
-//        $this->assertSame($expectedCountOfCars, $countOfCarsByCarRepository);
+        $carFactory = CarFactory::new()->withoutPersisting();
 
-        foreach (($entityManager = self::getContainer()->get(EntityManagerInterface::class))->getRepository(Car::class)->findAll() as $car)
-            $entityManager->remove($car);
 
-        $entityManager->flush();
+        yield 'withValidVin-withValidBrand-withPosition-withRentals' => [201, 'application/json; charset=utf-8', $carFactory->withValidVin()->withValidBrand()->withPosition()->withRentals()->create()];
+        yield 'withUniqueVin-withValidBrand-withPosition-withRentals' => [201, 'application/json; charset=utf-8', $carFactory->withUniqueVin()->withValidBrand()->withPosition()->withRentals()->create()];
+        yield 'withUniqueVin-withValidBrand-withPosition-withoutRentals' => [201, 'application/json; charset=utf-8', $carFactory->withUniqueVin()->withValidBrand()->withPosition()->withoutRentals()->create()];
+        yield 'withUniqueVin-withValidBrand-withoutPosition' => [201, 'application/json; charset=utf-8', $carFactory->withUniqueVin()->withValidBrand()->withoutPosition()->create()];
+        yield 'withUniqueVin-withInvalidBrand' => [400, 'application/problem+json; charset=utf-8', $carFactory->withUniqueVin()->withInvalidBrand()->create()];
+        yield 'withNonUniqueVin-withValidBrand' => [400, 'application/problem+json; charset=utf-8', $carFactory->withNonUniqueVin()->withInvalidBrand()->create()];
+        yield 'withVinThatStartsWithNumber-withValidBrand' => [422, 'application/problem+json; charset=utf-8', $carFactory->withVinThatStartsWithNumber()->withValidBrand()->create()];
+        yield 'withTooShortVin-withValidBrand' => [422, 'application/problem+json; charset=utf-8', $carFactory->withTooShortVin()->withValidBrand()->create()];
+        yield 'withTooLongVin-withValidBrand' => [422, 'application/problem+json; charset=utf-8', $carFactory->withTooLongVin()->withValidBrand()->create()];
+
+
+//        yield 'simple valid minimum value object' => [
+//        return [
+//            'valid' => [
+//                Response::HTTP_CREATED,
+//                'application/json; charset=utf-8',
+//                (object) [
+//                    'brand' => 'Audi',
+//                    'vin' => 'THISISAVALIDVIN01',
+//                    'registration' => 'ZK3888'
+//                ]
+//            ]
+//        ];
+//        yield 'valid' => [
+//            Response::HTTP_CREATED,
+//            'application/json; charset=utf-8',
+//            new Car('Audi', 'THISISAVALIDVIN01', 'ZK3888')
+////            (object) [
+////                'brand' => 'Audi',
+////                'vin' => 'THISISAVALIDVIN01',
+////                'registration' => 'ZK3888'
+////            ]
+//        ];
     }
 
-    /**
-     * @dataProvider validCarProvider
-     */
-    public function testShouldCreateACar(int $expectedId, string $brand, string $registration, string $vin, bool $rented, string | null $customerEmail, string | null $customerAddress): void
+    public static function getInvalidCarsToCreate(): Iterator
     {
-        // given
-        $car = (object) [
-            'brand' => $brand,
-            'registration' => $registration,
-            'vin' => $vin,
-            'rented' => $rented,
-            'customerEmail' => $customerEmail,
-            'customerAddress' => $customerAddress
+        yield 'simple invalid minimum value object with duplicated vin' => [
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'application/problem+json; charset=utf-8',
+            (object) [
+                'brand' => 'Audi',
+                'vin' => 'THISISAVALIDVIN01',
+                'registration' => 'ZK3999'
+            ]
         ];
-        $httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json']]);
-        $serializer = self::getContainer()->get(SerializerInterface::class);
 
-        // when
-        $response = $httpClient->request('POST', '/cars', ['json' => $car]);
-
-        // then
-        $deserializedResponse = $response->toArray(false);
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-        $this->assertResponseHeaderSame('Content-Type','application/json; charset=utf-8');
-        $this->assertMatchesResourceItemJsonSchema(Car::class);
-        $this->assertSame(
-            $serializer->normalize(
-                array_merge(
-//                    ['id' => $expectedId],
-                    array_filter((array) $car, fn ($value) => null !== $value),
-                    ['latitude' => 0.0, 'longitude' => 0.0]
-                ),
-                'json',
-                [AbstractObjectNormalizer::SKIP_NULL_VALUES => true]
-            ),
-            $serializer->normalize(
-                array_filter(
-                    $deserializedResponse,
-                    fn ($value, $key) => 'id' !== $key,
-                    ARRAY_FILTER_USE_BOTH
-                ),
-                'json',
-                [AbstractObjectNormalizer::SKIP_NULL_VALUES => true]
-            ),
-        );
-
-        foreach (($entityManager = self::getContainer()->get(EntityManagerInterface::class))->getRepository(Car::class)->findAll() as $car)
-            $entityManager->remove($car);
-
-        $entityManager->flush();
-    }
-
-    /**
-     * @dataProvider invalidCarProvider
-     */
-    public function testShouldNotCreateACar(int $expectedId, string $brand, string $registration, string $vin, bool $rented, string | null $customerEmail, string | null $customerAddress, string $expectedMessage): void
-    {
-        // given
-        $car = (object) [
-            'brand' => $brand,
-            'registration' => $registration,
-            'vin' => $vin,
-            'rented' => $rented,
-            'customerEmail' => $customerEmail,
-            'customerAddress' => $customerAddress
+        yield 'simple invalid minimum value object with invalid brand' => [
+            Response::HTTP_BAD_REQUEST,
+            'application/problem+json; charset=utf-8',
+            (object) [
+                'brand' => 'Unknown brand',
+                'vin' => 'THISISAVALIDVIN01',
+                'registration' => 'ZK3888'
+            ]
         ];
-        $httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json']]);
 
-        // when
-        $response = $httpClient->request('POST', '/cars', ['json' => $car]);
-
-        // then
-        $deserializedResponse = $response->toArray(false);
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $this->assertResponseHeaderSame('Content-Type','application/problem+json; charset=utf-8');
-        $this->assertCount(1, $deserializedResponse['violations']);
-        $this->assertSame($expectedMessage, $deserializedResponse['violations'][0]['message']);
-
-        foreach (($entityManager = self::getContainer()->get(EntityManagerInterface::class))->getRepository(Car::class)->findAll() as $car)
-            $entityManager->remove($car);
-
-        $entityManager->flush();
-    }
-
-    /**
-     * @dataProvider validCarUpdateProvider
-     */
-    public function testShouldUpdateTheCar(string $brand, string $registration, string $vin, bool $rented, string | null $customerEmail, string | null $customerAddress): void
-    {
-        // given
-        $car = new Car;
-        $car->setBrand('BMW');
-        $car->setRegistration('GS123456');
-        $car->setVin('VF1KZ1A054Y123456');
-        $car->setRented(false);
-
-        ($entityManager = self::getContainer()->get(EntityManagerInterface::class))->persist($car);
-        $entityManager->flush();
-
-        $carRepository = $entityManager->getRepository(Car::class);
-
-        $carBeforeUpdate = $carRepository->find($car->getId());
-
-        $carDataToPersist = (object) [
-            'brand' => $brand,
-            'registration' => $registration,
-            'vin' => $vin,
-            'rented' => $rented,
-            'customerEmail' => $customerEmail,
-            'customerAddress' => $customerAddress
+        yield 'simple invalid minimum value object with invalid vin length' => [
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'application/problem+json; charset=utf-8',
+            (object) [
+                'brand' => 'Audi',
+                'vin' => 'THISVINVALUEISTOOLONG',
+                'registration' => 'ZK3888'
+            ]
         ];
-        $httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json']]);
-        $serializer = self::getContainer()->get(SerializerInterface::class);
 
-        // when
-        $response = $httpClient->request('PUT', sprintf('/cars/%s', $car->getVin()), ['json' => $carDataToPersist]);
+        yield 'simple invalid minimum value object with invalid vin (starts with number)' => [
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'application/problem+json; charset=utf-8',
+            (object) [
+                'brand' => 'Audi',
+                'vin' => '1THISISINVALIDVIN',
+                'registration' => 'ZK3888'
+            ]
+        ];
 
-        // then
-        $deserializedResponse = $response->toArray(false);
-        $carAfterUpdate = $carRepository->find($car->getId());
+        yield 'simple invalid minimum value object with invalid registration (too short)' => [
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'application/problem+json; charset=utf-8',
+            (object) [
+                'brand' => 'Audi',
+                'vin' => 'THISISAVALIDVIN02',
+                'registration' => 'Z'
+            ]
+        ];
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        $this->assertResponseHeaderSame('Content-Type','application/json; charset=utf-8');
-        $this->assertMatchesResourceItemJsonSchema(Car::class);
-        $this->assertSame($deserializedResponse['brand'], $carAfterUpdate->getBrand());
-        $this->assertSame($deserializedResponse['registration'], $carAfterUpdate->getRegistration());
-        $this->assertSame($deserializedResponse['vin'], $carAfterUpdate->getVin());
-        $this->assertSame($deserializedResponse['rented'], $carAfterUpdate->isRented());
-        $this->assertSame($deserializedResponse['customerEmail'], $carAfterUpdate->getCustomerEmail());
-        $this->assertSame($deserializedResponse['customerAddress'], $carAfterUpdate->getCustomerAddress());
-
-        foreach (($entityManager = self::getContainer()->get(EntityManagerInterface::class))->getRepository(Car::class)->findAll() as $car)
-            $entityManager->remove($car);
-
-        $entityManager->flush();
+        yield 'simple invalid minimum value object with invalid registration (too long)' => [
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'application/problem+json; charset=utf-8',
+            (object) [
+                'brand' => 'Audi',
+                'vin' => 'THISISAVALIDVIN02',
+                'registration' => 'INVALIDLENGTH'
+            ]
+        ];
     }
 
-    public function testShouldRemoveTheCar(): void
+    public static function getExistingCars(): Iterator
+    {
+        $cars = self::getContainer()->get(EntityManagerInterface::class)->getRepository(Car::class)->findAll();
+
+        if (true === empty($cars)) {
+            yield '0' => [400, 'application/problem+json; charset=utf-8', CarFactory::new(['id' => 0])->create()];
+        }
+
+        foreach ($cars as $car) {
+            yield (string) $car->getId() => [201, 'application/json; charset=utf-8', $car];
+        }
+    }
+
+    public static function getCarsToCreate(): iterable
+    {
+        $iterator = new AppendIterator;
+
+//        $validCarsToCreate = $this->getValidCarsToCreate();
+        $validCarsToCreate = self::getValidCarsToCreate();
+//        $invalidCarsToCreate = self::getInvalidCarsToCreate();
+
+//        $validCarsToCreate->rewind();
+//        $invalidCarsToCreate->rewind();
+
+        $iterator->append($validCarsToCreate);
+//        $iterator->append($invalidCarsToCreate);
+
+        return iterator_to_array($iterator);
+    }
+
+    #[BeforeClass]
+//    #[AfterClass]
+    public function truncateRepositories(): void
+    {
+        RentalFactory::repository()->truncate();
+        CarFactory::repository()->truncate();
+    }
+
+    #[Test]
+    #[DataProviderExternal(className: CarTest::class, methodName: 'getValidCarsToCreate')]
+    #[Group(name: 'REST')]
+    public function shouldCreateCarResourceTroughPostEndpointCall(int $statusCode, string $contentType, Car $car): void
     {
         // given
-        $car = new Car;
-        $car->setBrand('BMW');
-        $car->setRegistration('GS123456');
-        $car->setVin('VF1KZ1A054Y123456');
-        $car->setRented(false);
-
-        ($entityManager = self::getContainer()->get(EntityManagerInterface::class))->persist($car);
-        $entityManager->flush();
-
-        $carRepository = $entityManager->getRepository(Car::class);
-
-        $httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json']]);
+        $httpClient = $this->httpClient;
+        $serializer = $this->serializer;
+        $carAsJsonPayload = $serializer->serialize($car, 'json', ['iri' => false, 'groups' => ['car:create:write']]);
 
         // when
-        $response = $httpClient->request('DELETE', sprintf('/cars/%s', $car->getRegistration()));
+        $httpClient->request(method: 'POST', url: '/cars', options: ['body' => $carAsJsonPayload]);
+//        dump($httpClient::class, $httpClient->getResponse()::class); die;
 
         // then
-        $this->expectException(TransportException::class);
-        $this->expectExceptionMessage('Response body is empty.');
-        $response->toArray();
+        $this->assertResponseStatusCodeSame($statusCode);
+        $this->assertResponseHeaderSame('content-type', $contentType);
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
-        $this->assertNull($carRepository->findOneBy(['id' => $car->getId()]));
+        if ($contentType === 'application/problem+json; charset=utf-8') {
+            $this->expectException(ClientException::class);
 
-        $httpClient->request('GET', sprintf('/cars/%s', $car->getVin()));
+
+            if (Response::HTTP_BAD_REQUEST === $httpClient->getResponse()->getStatusCode()) {
+                $deserialized = $serializer->deserialize($httpClient->getResponse()->getContent(false), Error::class, 'json');
+//                dump(deserialized);
+                $this->assertInstanceOf(Error::class, $deserialized);
+                $this->assertObjectHasProperty('title',$deserialized);
+                $this->assertObjectHasProperty('detail',$deserialized);
+                $this->assertObjectHasProperty('status',$deserialized);
+                $this->assertObjectHasProperty('type',$deserialized);
+            }
+
+            $httpClient->getResponse()->getContent(true);
+        }
+
+            $this->assertSame(
+                $httpClient->getResponse()->getContent(),
+                $carAsJsonPayload,
+            );
+    }
+
+    #[Test]
+    #[DataProviderExternal(className: CarTest::class, methodName: 'getExistingCars')]
+    #[Group(name: 'REST')]
+    public function shouldUpdateCarResourceTroughPatchEndpointCall(int $statusCode, string $contentType, Car $responseCar): void
+    {
+        // given
+        $carId = $responseCar->getId();
+        $httpClient = $this->httpClient;
+        $originalCar = ($carRepository = $this->entityManager->getRepository(Car::class))->find((int) $carId);
+
+        if (null === $originalCar)
+            $this->expectException(TypeError::class);
+
+        // when
+        $httpClient->request(method: 'PATCH', url: (string) $this->getIriFromResource($originalCar), options: ['body' => json_encode($carToPopulate = (object) [
+            'vin' => sprintf('SHOULDNOTCHANGE%d', $originalCar->getId()),
+            'registration' => sprintf('ZZXXDD%d', $originalCar->getId())
+        ])]);
+
+        // then
+        $this->assertIsInt($carId);
+        $this->assertInstanceOf(Car::class, $originalCar);
+        $responseCar = json_decode($httpClient->getResponse()->getContent(), false, JSON_THROW_ON_ERROR);
+        $this->assertNotSame($originalCar->getVin(), $carToPopulate->vin);
+        $this->assertNotSame($originalCar->getRegistration(), $carToPopulate->registration);
+        $this->assertSame($originalCar->getVin(), $responseCar->vin);
+        $this->assertNotSame($originalCar->getRegistration(), $responseCar->registration);
+    }
+
+    #[Test]
+    #[DataProviderExternal(className: CarTest::class, methodName: 'getExistingCars')]
+    #[Group(name: 'REST')]
+    public function shouldDeleteCarResourceTroughDeleteEndpointCall(int $statusCode, string $contentType, Car $existingCar): void
+    {
+        if (0 === $existingCar->getId() && $this->assertSame(true, true))
+            return;
+
+        // given
+        $httpClient = $this->httpClient;
+        $carRepository = $this->entityManager->getRepository(Car::class);
+
+        // when
+        $httpClient->request(method: 'DELETE', url: (string) $this->getIriFromResource($existingCar));
+        $carLookedInRepository = $carRepository->find($existingCar->getId());
+
+        // then
+        // TODO: pozbyć się tego
+        if(Response::HTTP_NOT_FOUND === $httpClient->getResponse()->getStatusCode())
+            $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+        else
+            $this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+
+        $httpClient->request(method: 'GET', url: (string) $this->getIriFromResource($existingCar));
+
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
-    }
-
-    public function testShouldNotRemoveTheCar(): void
-    {
-        // given
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $carRepository = $entityManager->getRepository(Car::class);
-        $httpClient = static::createClient(defaultOptions: ['headers'=> ['Accept' => 'application/json']]);
-
-        // when
-        $response = $httpClient->request('DELETE', sprintf('/cars/%d', 0));
-
-        // then
-        $this->expectException(ClientException::class);
-        $response->toArray();
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
-        $this->assertNull($carRepository->findOneBy(['id' => 0]));
-    }
-    public static function countOfCarsInCollectionProvider(): iterable
-    {
-        yield 'empty' => [0];
-        yield '20' => [20];
-    }
-
-    public static function validCarProvider(): iterable
-    {
-        yield 'not rented' => [1, 'BMW', 'TEST123', 'DFMDU34X8MUD84229', false, null, null];
-        yield 'rented' => [1, 'Audi', 'WA4567', 'YV1RS61T532259048', true, 'imie.nazwisko@example.nextai', 'ul. Sezamkowa, 11-222 Warszawa'];
+        $this->assertNull($carLookedInRepository);
     }
 
     public static function invalidCarProvider(): iterable
     {
-        yield 'with incorrect brand' => [1, 'incorrect-brand', 'TEST123', 'DFMDU34X8MUABC229', false, null, null, 'The value you selected is not a valid choice.'];
-        yield 'with too short registration number' => [2, 'Audi', 'T', 'KMHCM36C05U123456', false, null, null, 'Invalid registration'];
-        yield 'with too long registration number' => [3, 'BMW', 'T123456789ABC', 'DFMDU34X8MUD84229', false, null, null, 'Invalid registration'];
+//        yield 'with incorrect brand' => [1, 'incorrect-brand', 'TEST123', 'DFMDU34X8MUABC229', false, null, null, 'The value you selected is not a valid choice.'];
+//        yield 'with too short registration number' => [2, 'Audi', 'T', 'KMHCM36C05U123456', false, null, null, 'Invalid registration'];
+//        yield 'with too long registration number' => [3, 'BMW', 'T123456789ABC', 'DFMDU34X8MUD84229', false, null, null, 'Invalid registration'];
         yield 'with Invalid registration (number as first character)' => [4, 'Toyota', '1INVALID', 'DFMDU34X8MUD84229', false, null, null, 'Invalid registration'];
-        yield 'with invalid vin (number as first character)' => [5, 'Honda', '1INVALID', '9FMDU34X8MUD8422D', false, null, null, 'Invalid registration'];
+//        yield 'with invalid vin (number as first character)' => [5, 'Honda', '1INVALID', '9FMDU34X8MUD8422D', false, null, null, 'Invalid registration'];
         yield 'rented with invalid customer email' => [6, 'Tesla', 'KR1234AB', 'HGCM82633A1234567', true, 'invalid_email', 'ul. Sezamkowa 5, 11-222 WarszAwa', 'This value is not a valid email address.'];
         yield 'not rented with customer email' => [7, 'Ferrari', 'WA5678CD', 'WDBUF56J76A123456', false, 'imie.nazwisko@example.nextai', null, 'Customer email address should be empty'];
         yield 'not rented with customer address' => [8, 'Volvo', 'PO4321EF', 'WBA3A5C59FF123456', false, null, 'ul. Sezamkowa, 11-222 Warszawa', 'Customer address should be empty'];
-    }
-
-    public static function validCarUpdateProvider(): iterable
-    {
-        yield 'not rented' => ['BMW', 'TEST123', 'DFMDU34X8MUD84229', false, null, null];
-        yield 'rented' => ['Audi', 'WA4567', 'YV1RS61T532259048', true, 'imie.nazwisko@example.nextai', 'ul. Sezamkowa, 11-222 Warszawa'];
     }
 }

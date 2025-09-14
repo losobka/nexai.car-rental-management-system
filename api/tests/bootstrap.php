@@ -14,10 +14,10 @@ if ($_SERVER['APP_DEBUG']) {
 
 foreach ([
     'cache:clear --no-warmup',
-    'doctrine:database:drop --if-exists --force',
-    'doctrine:database:create',
-    'doctrine:schema:create',
-    'doctrine:fixtures:load --no-interaction --append'
+//    'doctrine:database:drop --if-exists --force',
+//    'doctrine:database:create',
+//    'doctrine:schema:create',
+//    'doctrine:fixtures:load --no-interaction --append'
 ] as $command) {
     ob_start();
 
@@ -32,3 +32,10 @@ foreach ([
 
     ob_end_clean();
 }
+
+Zenstruck\Foundry\Test\UnitTestConfig::configure(
+//    instantiator: Zenstruck\Foundry\Object\Instantiator::withConstructor()
+//        ->allowExtra()
+//        ->alwaysForce(),
+    faker: Faker\Factory::create('pl_PL')
+);

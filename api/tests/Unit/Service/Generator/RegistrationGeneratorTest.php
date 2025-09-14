@@ -6,6 +6,7 @@ use App\Service\RegistrationGenerator;
 use OutOfBoundsException;
 use Random\RandomException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 class RegistrationGeneratorTest extends KernelTestCase
 {
@@ -15,7 +16,7 @@ class RegistrationGeneratorTest extends KernelTestCase
     public function setUp(): void
     {
         parent::setUp();
-        $this->registrationGenerator = self::getContainer()->get(RegistrationGenerator::class);
+        $this->registrationGenerator = self::getContainer()->get('app.service.registration_generator');
         $this->registrationMaxLength = self::getContainer()->getParameter('app.registration.max_length');
     }
 

@@ -7,6 +7,7 @@ when@dev:
         profiler:
             only_exceptions: false
             collect_serializer_data: true
+            dsn: 'file:/app/var/cache/test/profiler'
 
 when@test:
     web_profiler:
@@ -14,4 +15,4 @@ when@test:
         intercept_redirects: false
 
     framework:
-        profiler: { collect: false }
+        profiler: { enabled: true, collect: true }

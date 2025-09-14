@@ -24,6 +24,12 @@ services:
             - '../src/Embeddable/'
             - '../src/Kernel.php'
 
+    app.service.vin_generator:
+        class: App\Service\VinGenerator
+
+    app.service.registration_generator:
+        class: App\Service\RegistrationGenerator
+
     app.service.latitude_generator: '@App\Service\LatitudeGenerator'
     app.service.longitude_generator: '@App\Service\LongitudeGenerator'
 

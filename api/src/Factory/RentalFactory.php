@@ -29,7 +29,7 @@ final class RentalFactory extends PersistentProxyObjectFactory
     {
         return [
             'billingAddress' => AddressFactory::new()->create(),
-            'car' => CarFactory::new(),
+            'car' => CarFactory::randomOrCreate(),
             'customerEmail' => self::faker()->unique()->email(),
             'startDate' => self::faker()->dateTime(),
         ];

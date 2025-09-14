@@ -11,26 +11,28 @@ final class AppFixtures extends Fixture
 {
     public function load(ObjectManager $manager): void
     {
-        CarFactory::createMany(10);
+        CarFactory::new()->andPersist()->createMany(100);
+        dump('created cars');
+        RentalFactory::new()->andPersist()->createMany(1000, ['car' => CarFactory::random()]);
 
-        foreach (CarFactory::repository()->findAll() as $car) {
-            foreach (range(0, random_int(1, 10)) as $i) {
-                $currentTime = faker()->dateTime();
-
-                if (false === faker()->randomElement([true, false]))
-                    continue;
-
-                $currentTime = faker()->dateTimeBetween($currentTime, 'now');
-
-                $rental = RentalFactory::new()->create([
-                    'startDate' => $currentTime,
-                    'endDate' => faker()->dateTimeBetween($currentTime, 'now'),
-                    'car' => $car
-                ]);
-            }
-
-            if (faker()->randomElement([true, false]))
-                $car->getRentals()->last()->setEndDate(null);
-        }
+//        foreach (CarFactory::repository()->findAll() as $car) {
+//            foreach (range(0, random_int(1, 10)) as $i) {
+//                $currentTime = faker()->dateTime();
+//
+//                if (false === faker()->randomElement([true, false]))
+//                    continue;
+//
+//                $currentTime = faker()->dateTimeBetween($currentTime, 'now');
+//
+//                $rental = RentalFactory::new()->create([
+//                    'startDate' => $currentTime,
+//                    'endDate' => faker()->dateTimeBetween($currentTime, 'now'),
+//                    'car' => $car
+//                ]);
+//            }
+//
+//            if (faker()->randomElement([true, false]))
+//                $car->getRentals()->last()->setEndDate(null);
+//        }
     }
 }

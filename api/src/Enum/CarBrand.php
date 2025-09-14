@@ -25,8 +25,9 @@ enum CarBrand: string
     case VOLKSWAGEN = 'Volkswagen';
     case VOLVO ='Volvo';
 
-    public static function all(): array
+    public static function values(): array
     {
-        return [];
+        return self::cases();
+        return array_column(self::cases(), 'value');
     }
 }

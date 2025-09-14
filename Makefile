@@ -5,7 +5,7 @@ start:
 	docker compose up --remove-orphans --timestamps > /dev/stdout
 	docker compose exec nginx sh -c "chown root:root /app -R"
 
-.PHONY: stop
+.PHONY: stopn
 stop:
 	docker compose exec php-fpm rm -Rf vendor || exit 0
 	docker compose rm -v -s -f
@@ -16,7 +16,7 @@ run-api-e2e-tests:
 	docker compose exec php-fpm bin/phpunit tests/E2E
 
 .PHONY: run-api-unit-tests
-run-api-unit-tests:
+run-api-unit-tests:`n
 	docker compose exec php-fpm bin/phpunit tests/Unit
 
 .PHONY: open

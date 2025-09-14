@@ -55,7 +55,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Delete
     ],
 )]
-#[UniqueEntity(fields: ['vin'])]
+#[UniqueEntity(fields: ['vin', 'registration'])]
 class Car
 {
     public const REGISTRATION_REGEX = '@^[A-Z]{1}[A-Z\d]{2,11}$@';
@@ -65,16 +65,19 @@ class Car
     #[ORM\GeneratedValue]
     #[ORM\Column]
     #[ApiProperty(identifier: true)]
-    #[Groups(['car:item:read', 'car:collection:read', 'car:create:read', 'car:update:read', 'rental:item:read', 'rental:collection:read', 'rental:update:read', 'rental:create:read'])]
+    #[Groups(['car:item:read', 'car:collection:read', 'car:update:read', 'rental:item:read', 'rental:collection:read', 'rental:update:read', 'rental:create:read'])]
     private ?int $id = null;
 
     #[ORM\Column(type: 'string', enumType: CarBrand::class)]
+    #[Assert\NotNull]
+    #[Assert\Choice(callback: 'getAvailableBrands')]
     #[Groups(['car:item:read', 'car:collection:read', 'car:create:read', 'car:create:write', 'car:update:read', 'car:update:write', 'rental:item:read', 'rental:collection:read', 'rental:update:read', 'rental:create:read'])]
-    private ?CarBrand $brand;
+    private CarBrand|string $brand = '';
 
     #[ORM\Column(length: 12, unique: true)]
     #[Assert\Regex(pattern: self::REGISTRATION_REGEX, message: 'Invalid registration')]
     #[Assert\Length(min: 3, max: 12)]
+//    #[Assert\Unique]
     #[ApiProperty(openapiContext: [
         'example' => 'ZK3666'
     ])]
@@ -99,10 +102,35 @@ class Car
     #[ORM\OneToMany(targetEntity: Rental::class, mappedBy: 'car', cascade: ['persist'], orphanRemoval: true)]
     private Collection $rentals;
 
-    public function __construct()
-    {
-        $this->currentPosition = new RecordedGeolocation;
-        $this->rentals = new ArrayCollection();
+    public function __construct(
+        ?int $id = null,
+        CarBrand|string $brand = '',
+        string $vin = '',
+        string $registration = '',
+        Collection|array|null $rentals = null,
+        ?RecordedGeolocation $currentPosition = null
+    ) {
+        $this->id = $id;
+
+        if (true === is_string($brand))
+            $brand = CarBrand::tryFrom($brand) ?? '';
+
+        $this->brand = $brand;
+        $this->vin = $vin;
+        $this->registration = $registration;;
+
+        if (true === is_array($rentals)) {
+            $this->rentals = new ArrayCollection([]);
+
+            foreach ($rentals as $rental) {
+                $this->addRental($rental);
+            }
+        }
+
+        if (null === $currentPosition)
+            $currentPosition = new RecordedGeolocation;
+
+        $this->currentPosition = $currentPosition;
     }
 
     public function getId(): ?int
@@ -110,7 +138,7 @@ class Car
         return $this->id;
     }
 
-    public function getBrand(): CarBrand
+    public function getBrand(): CarBrand|string
     {
         return $this->brand;
     }
@@ -211,5 +239,10 @@ class Car
             return null;
 
         return $latestRental;
+    }
+
+    public static function getAvailableBrands(): array
+    {
+        return CarBrand::values();
     }
 }
